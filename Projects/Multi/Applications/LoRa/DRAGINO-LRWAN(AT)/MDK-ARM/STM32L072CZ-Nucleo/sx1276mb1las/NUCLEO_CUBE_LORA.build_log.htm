@@ -1,0 +1,58 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: μVision V5.24.2.0
+Copyright (C) 2017 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: FGF DGDG, DFGDG, LIC=X962Z-JQ4R3-J6CQ9-4E8M4-5WIZ0-VI2NA
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Plus  Version: 5.24.1
+Toolchain Path:  D:\KEIL\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 5 (build 528)
+Assembler:       Armasm.exe V5.06 update 5 (build 528)
+Linker/Locator:  ArmLink.exe V5.06 update 5 (build 528)
+Library Manager: ArmAr.exe V5.06 update 5 (build 528)
+Hex Converter:   FromElf.exe V5.06 update 5 (build 528)
+CPU DLL:         SARMCM3.DLL V5.24.1
+Dialog DLL:      DARMCM1.DLL V1.18.0.0
+Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.0.1.0
+Dialog DLL:      TARMCM1.DLL V1.13.0.0
+ 
+<h2>Project:</h2>
+E:\资料\GPS资料\GPS TRACK V1.1\LoRa_STM32-master\LGT-92\Projects\Multi\Applications\LoRa\DRAGINO-LRWAN(AT)\MDK-ARM\STM32L072CZ-Nucleo\Lora.uvprojx
+Project File Date:  12/04/2018
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 5 (build 528)', folder: 'D:\KEIL\ARM\ARMCC\Bin'
+Build target 'sx1276mb1las'
+compiling lora.c...
+..\..\src\lora.c(719): warning:  #223-D: function "LoRaMacTestSetDutyCycleOn" declared implicitly
+    LoRaMacTestSetDutyCycleOn((duty_cycle == LORA_ENABLE) ? 1 : 0);
+..\..\src\lora.c(1079): warning:  #223-D: function "LoRaMacTestSetDutyCycleOn" declared implicitly
+  	LoRaMacTestSetDutyCycleOn((lora_config.duty_cycle == LORA_ENABLE) ? 1 : 0);
+..\..\src\lora.c(93): warning:  #177-D: variable "TxTimer"  was declared but never referenced
+  static TimerEvent_t TxTimer;
+..\..\src\lora.c: 3 warnings, 0 errors
+linking...
+Program Size: Code=69780 RO-data=6344 RW-data=1068 ZI-data=7444  
+FromELF: creating hex file...
+".\sx1276mb1las\NUCLEO_CUBE_LORA.axf" - 0 Error(s), 3 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: Keil
+                http://www.keil.com/pack/Keil.STM32L0xx_DFP.1.6.0.pack
+                Keil.STM32L0xx_DFP.1.6.0
+                STMicroelectronics STM32L0 Series Device Support and Examples
+
+<h2>Collection of Component include folders:</h2>
+  .\RTE\_sx1276mb1las
+  D:\KEIL\ARM\PACK\Keil\STM32L0xx_DFP\1.6.0\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+Build Time Elapsed:  00:00:29
+</pre>
+</body>
+</html>
