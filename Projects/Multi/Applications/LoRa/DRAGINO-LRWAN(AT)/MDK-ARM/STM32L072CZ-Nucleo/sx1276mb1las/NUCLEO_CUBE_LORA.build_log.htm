@@ -21,24 +21,20 @@ Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.0.1.0
 Dialog DLL:      TARMCM1.DLL V1.13.0.0
  
 <h2>Project:</h2>
-E:\资料\GPS资料\GPS TRACK V1.1\LoRa_STM32-master\LGT-92\Projects\Multi\Applications\LoRa\DRAGINO-LRWAN(AT)\MDK-ARM\STM32L072CZ-Nucleo\Lora.uvprojx
-Project File Date:  12/04/2018
+E:\资料\GPS资料\GPS TRACK V1.1\LoRa_STM32-master\LGT-92 -v1.4\Projects\Multi\Applications\LoRa\DRAGINO-LRWAN(AT)\MDK-ARM\STM32L072CZ-Nucleo\Lora.uvprojx
+Project File Date:  04/29/2019
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 5 (build 528)', folder: 'D:\KEIL\ARM\ARMCC\Bin'
 Build target 'sx1276mb1las'
-compiling lora.c...
-..\..\src\lora.c(719): warning:  #223-D: function "LoRaMacTestSetDutyCycleOn" declared implicitly
-    LoRaMacTestSetDutyCycleOn((duty_cycle == LORA_ENABLE) ? 1 : 0);
-..\..\src\lora.c(1079): warning:  #223-D: function "LoRaMacTestSetDutyCycleOn" declared implicitly
-  	LoRaMacTestSetDutyCycleOn((lora_config.duty_cycle == LORA_ENABLE) ? 1 : 0);
-..\..\src\lora.c(93): warning:  #177-D: variable "TxTimer"  was declared but never referenced
-  static TimerEvent_t TxTimer;
-..\..\src\lora.c: 3 warnings, 0 errors
+compiling command.c...
+..\..\inc\at.h(665): warning:  #1295-D: Deprecated declaration s_tdc - give arg types
+  void s_tdc();
+..\..\src\command.c: 1 warning, 0 errors
 linking...
-Program Size: Code=69780 RO-data=6344 RW-data=1068 ZI-data=7444  
+Program Size: Code=70504 RO-data=6652 RW-data=1096 ZI-data=8248  
 FromELF: creating hex file...
-".\sx1276mb1las\NUCLEO_CUBE_LORA.axf" - 0 Error(s), 3 Warning(s).
+".\sx1276mb1las\NUCLEO_CUBE_LORA.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -52,7 +48,7 @@ Package Vendor: Keil
   D:\KEIL\ARM\PACK\Keil\STM32L0xx_DFP\1.6.0\Device\Include
 
 <h2>Collection of Component Files used:</h2>
-Build Time Elapsed:  00:00:29
+Build Time Elapsed:  00:00:04
 </pre>
 </body>
 </html>

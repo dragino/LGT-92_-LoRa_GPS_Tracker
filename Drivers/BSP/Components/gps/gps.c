@@ -13,6 +13,7 @@
   char lasttime[20]; 
   _Bool isrunning; 
   uint32_t   isFirmwareUpdate = 0; 
+	int count =0;
 
 
 _Bool GPS_Run(void)   
@@ -769,7 +770,7 @@ uint8_t GPS_parse(char *buf)
 }
 
 #define  NEMA_NUM_MAX   6     //缓冲的NEMA语句数量
-#define  NEMA_CHAR_MAX  120   //缓冲的NEMA语句字符数量 
+#define  NEMA_CHAR_MAX  255   //缓冲的NEMA语句字符数量 
 
 struct {
        uint8_t   isupdated;  //NEMA 缓冲区更新标志
@@ -783,6 +784,7 @@ struct {
 	
     static  uint8_t NEMA_count = 0;
     static  uint8_t char_count = 0;
+		 uint8_t Empty = 0;
     if(isFirmwareUpdate == 1)     //更新固件
       return;
     if(buffer == '$')
@@ -801,8 +803,15 @@ struct {
 			else
 				{
          if(char_count < NEMA_CHAR_MAX-1)
-         GPS_NEMA[NEMA_count].buffer[char_count++] = buffer;
+          GPS_NEMA[NEMA_count].buffer[char_count++] = buffer;
         }
+			count ++;	
+		if(count == 255)
+		{
+			GPS_NEMA[NEMA_count].isupdated = 0  ;
+			GPS_NEMA[NEMA_count].buffer[char_count++] = 0  ;
+			count = 0;
+		}
   }
 uint8_t GPS_INFO_update(void)
 { 
@@ -894,7 +903,7 @@ void GPS_INPUT(void)
     FP32 ss;
 	
 	  GPS_INFO_update();
-    GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
+//    GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
 	
 //    AT_PRINTF("%s:%3d %2d'%5.2f ",(gps.latNS == 'N')?"北纬":"南纬",dd, mm, ss);
 //    AT_PRINTF("%s: %.6f度\n\r",(gps.latNS == 'N')?"北纬":"南纬",gps.latitude);

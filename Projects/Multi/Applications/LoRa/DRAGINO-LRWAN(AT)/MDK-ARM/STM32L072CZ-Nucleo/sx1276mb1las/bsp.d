@@ -56,3 +56,7 @@
 .\sx1276mb1las\bsp.o: ..\..\inc\vcom.h
 .\sx1276mb1las\bsp.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Utilities\timeServer.h
 .\sx1276mb1las\bsp.o: ..\..\inc\bsp.h
+.\sx1276mb1las\bsp.o: ..\..\inc\lora.h
+.\sx1276mb1las\bsp.o: ..\..\inc\Commissioning.h
+.\sx1276mb1las\bsp.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac\LoRaMac.h
+.\sx1276mb1las\bsp.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac\region/Region.h

@@ -73,10 +73,18 @@ extern uint32_t Server_TX_DUTYCYCLE;
 
 extern uint32_t Alarm_TX_DUTYCYCLE;
 
+uint32_t Positioning_time = 1;
+
 uint32_t set_sgm = 0;
 uint32_t s_gm = 0;
 uint32_t start = 0;
 uint32_t s_timer = 1;
+
+uint8_t symbtime1_value=0;  //RX1windowtimeout 
+uint8_t flag1=0;
+
+uint8_t symbtime2_value=0;  //RX2windowtimeout 
+uint8_t flag2=0;
 /* Private macro -------------------------------------------------------------*/
 /**
  * @brief Macro to return when an error occurs
@@ -1142,7 +1150,7 @@ ATEerror_t at_rssi_get(const char *param)
 
 ATEerror_t at_TDC_set(const char *param)
 { 
-	if (tiny_sscanf(param, "%lu", &APP_TX_DUTYCYCLE) != 1)
+	if (tiny_sscanf(param, "%lu", &Server_TX_DUTYCYCLE) != 1)
   {
     return AT_PARAM_ERROR;
   }
@@ -1151,7 +1159,7 @@ ATEerror_t at_TDC_set(const char *param)
 }
 ATEerror_t at_TDC_get(const char *param)
 { 
-	print_d(APP_TX_DUTYCYCLE);
+	print_d(Server_TX_DUTYCYCLE);
 	return AT_OK;
 }
 
@@ -1304,21 +1312,35 @@ ATEerror_t at_sgm_get(const char *param)
 	return AT_OK;
 }
 
-ATEerror_t at_DCE_set(const char *param)
+//ATEerror_t at_DCE_set(const char *param)
+//{ 
+//	if (tiny_sscanf(param, "%lu", &Server_TX_DUTYCYCLE) != 1)
+//  {
+//    return AT_PARAM_ERROR;
+//  }
+//  s_tdc();
+//	return AT_OK;
+//}
+//ATEerror_t at_DCE_get(const char *param)
+//{ 
+//	print_d(Server_TX_DUTYCYCLE);
+//	return AT_OK;
+//}
+
+ATEerror_t at_gpst_set(const char *param)
 { 
-	if (tiny_sscanf(param, "%lu", &Server_TX_DUTYCYCLE) != 1)
+	if (tiny_sscanf(param, "%lu", &Positioning_time) != 1)
   {
     return AT_PARAM_ERROR;
   }
   s_tdc();
 	return AT_OK;
 }
-ATEerror_t at_DCE_get(const char *param)
+ATEerror_t at_gpst_get(const char *param)
 { 
-	print_d(Server_TX_DUTYCYCLE);
+	print_d(Positioning_time);
 	return AT_OK;
 }
-
 
 
 ATEerror_t at_ACE_set(const char *param)
@@ -1343,6 +1365,59 @@ ATEerror_t at_STD(const char *param)
 	s_timer = 0;
   return AT_OK;
 }
+
+ATEerror_t at_symbtimeout1LSB_get(const char *param)
+{ 
+   print_d(symbtime1_value);
+	 return AT_OK;
+}
+
+ATEerror_t at_symbtimeout1LSB_set(const char *param)
+{ 
+	int symbtime1;
+	if (tiny_sscanf(param, "%d", &symbtime1) != 1)
+  {
+    return AT_PARAM_ERROR;
+  }
+	if ((symbtime1>=0)&&(symbtime1<=255))
+  { 
+		 flag1=1;
+		 symbtime1_value=symbtime1;
+  }
+	else
+	{
+    return AT_PARAM_ERROR;
+	}
+	
+	return AT_OK;
+}
+
+ATEerror_t at_symbtimeout2LSB_get(const char *param)
+{ 
+   print_d(symbtime2_value);
+	 return AT_OK;
+}
+
+ATEerror_t at_symbtimeout2LSB_set(const char *param)
+{ 
+	int symbtime2;
+	if (tiny_sscanf(param, "%d", &symbtime2) != 1)
+  {
+    return AT_PARAM_ERROR;
+  }
+	if ((symbtime2>=0)&&(symbtime2<=255))
+  { 
+		 flag2=1;
+		 symbtime2_value=symbtime2;
+  }
+	else
+	{
+    return AT_PARAM_ERROR;
+	}
+	
+	return AT_OK;
+}
+
 /* Private functions ---------------------------------------------------------*/
 
 static ATEerror_t translate_status(LoRaMacStatus_t status)

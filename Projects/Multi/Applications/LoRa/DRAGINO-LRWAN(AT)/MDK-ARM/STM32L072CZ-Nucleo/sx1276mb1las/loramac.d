@@ -53,3 +53,4 @@
 .\sx1276mb1las\loramac.o: ..\..\inc\utilities_conf.h
 .\sx1276mb1las\loramac.o: ..\..\inc\vcom.h
 .\sx1276mb1las\loramac.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac\LoRaMacTest.h
+.\sx1276mb1las\loramac.o: ..\..\inc\bsp.h

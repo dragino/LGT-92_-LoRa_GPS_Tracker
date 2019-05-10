@@ -69,7 +69,11 @@ extern uint32_t Server_TX_DUTYCYCLE;
 
 extern uint32_t Alarm_TX_DUTYCYCLE;
 
+extern uint32_t GPS_ALARM;
+
 extern uint32_t set_sgm;
+
+extern uint32_t Positioning_time;
 
 extern uint32_t s_gm;
 
@@ -80,6 +84,8 @@ extern uint8_t Alarm_times;
 extern uint8_t Alarm_times1;
 
 extern uint8_t Restart;
+
+extern  uint32_t Alarm_LED ;
 
 #define HEX16(X)  X[0],X[1], X[2],X[3], X[4],X[5], X[6],X[7],X[8],X[9], X[10],X[11], X[12],X[13], X[14],X[15]
 #define HEX8(X)   X[0],X[1], X[2],X[3], X[4],X[5], X[6],X[7]
@@ -389,11 +395,7 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
 	
 	#if defined(LoRa_Sensor_Node) || defined(AT_Data_Send)
 	
-	#if defined(LoRa_Sensor_Node)
-	PRINTF("\n\r LGT-92 Device\n\r");
-	#else
-	PRINTF("\n\rLoRa GPS Module\n\r");
-	#endif
+	PRINTF("\n\rLGT-92 Device\n\r");
 	
 	PRINTF("Image Version: "AT_VERSION_STRING"\n\r");
 	PRINTF("Frequency Band: ");
@@ -470,15 +472,18 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
 			{
 				lora_config.duty_cycle = LORA_DISABLE;
 	      lora_config.application_port=2;
-			
-				APP_TX_DUTYCYCLE=30000;
+        #if defined ( REGION_US915 ) || defined ( REGION_AU915 )
+       	customize_config.set8channel = 2;
+        #endif
+				Server_TX_DUTYCYCLE=300000;
 				
 				Store_Config();
 				Read_Config();
 				FLASH_program_on_addr(0x8018F80,0x11);
         s_gm = 0;	
         s_timer = 1;
-        Restart = 0;				
+        Restart = 0;
+        gps.flag = 1;			
         PRINTF("Please set the parameters or reset Device to apply change\n\r");				
 			}
       else 
@@ -1025,6 +1030,8 @@ void Store_Config(void)
 	  
 	s_config[config_count++]=set_sgm;
 	
+	s_config[config_count++]=Positioning_time;
+	
 //	s_config[config_count++]=Alarm_TX_DUTYCYCLE;
 	
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);//Page800 
@@ -1035,7 +1042,7 @@ void Store_Config(void)
 
 void Read_Config(void)
 {
-	uint32_t star_address=0,r_config[14],r_key[17];
+	uint32_t star_address=0,r_config[15],r_key[17];
 	
 	star_address=FLASH_USER_START_ADDR_KEY;
 	/* read key*/
@@ -1053,7 +1060,7 @@ void Read_Config(void)
 	read_data(8 ,lora_config.AppEui,r_key[15],r_key[16],0,0);
 	
 	star_address=FLASH_USER_START_ADDR_CONFIG;
-	for(int i=0;i<14;i++)
+	for(int i=0;i<15;i++)
 	{
 	  r_config[i]=FLASH_read(star_address);
 		star_address+=4;
@@ -1134,6 +1141,8 @@ void Read_Config(void)
 	
 	set_sgm = r_config[13];
 	
+	Positioning_time = r_config[14];
+	
 //	Alarm_TX_DUTYCYCLE = r_config[14];
 }
 
@@ -1161,7 +1170,9 @@ void lora_state_INT(void)
 	if(in1 == 1)
 	{
 		PRINTF("Enter\n\r");
-		State = STATE_WAKE_JOIN;
+		GPS_ALARM =1;
+		Alarm_LED = 0;
+		State = STATE_GPS_SEND;
 		APP_TX_DUTYCYCLE = 0;
 //		TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
 //	

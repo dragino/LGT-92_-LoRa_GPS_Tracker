@@ -30,6 +30,7 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 
 #include "debug.h"
 #include "LoRaMacTest.h"
+#include "bsp.h"
 
 
 
@@ -1261,6 +1262,7 @@ static void OnMacStateCheckTimerEvent( void )
 			                  Alarm_times1 = 0;
                         ChannelsNbRepCounter = 0;
                         LoRaMacState &= ~LORAMAC_TX_RUNNING;
+
                     }
                     else
                     {
@@ -2083,9 +2085,12 @@ static void ResetMacParameters( void )
     UpLinkCounter = 0;
     DownLinkCounter = 0;
     AdrAckCounter = 0;
-
+		BSP_sensor_Init();
+		LED1_1;
+		HAL_Delay(200);	
+		LED1_0;
 	  Alarm_times = 60;
-	 Alarm_times1 = 0;
+	  Alarm_times1 = 0;
 	
     ChannelsNbRepCounter = 0;
 
