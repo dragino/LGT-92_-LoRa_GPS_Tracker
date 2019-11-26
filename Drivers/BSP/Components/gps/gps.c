@@ -1,6 +1,6 @@
 #include "GPS.h"  
 #include "at.h"  
-
+#include "vcom.h"
 #define SEMICOLON   ','    
 #define ASTERISK    '*'    
   
@@ -457,22 +457,26 @@ uint8_t GPS_parse(char *buf)
    
     left=word;   
    
-    word=split(left,SEMICOLON,&left);   
-    if(!strcmp(word,"GPRMC"))   
+    word=split(left,SEMICOLON,&left); 
+    if(!strcmp(word,"GNRRMC"))   
     {   
-        //时间戳    
-        word=split(left,SEMICOLON,&left);   
+        //时间戳  
+//        AT_PRINTF("GNRMC:%s\n\r",word);				
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GNRMC1:%s\n\r",word);				
         if(word != NULL)   
         {   
             if(strncmp(lasttime,word,20))   
             {   
-                sscanf(word,"%2d%2d%2d.%4d",&gps.hh,&gps.mm,&gps.ss,&gps.ms);   
+                sscanf(word,"%2d%2d%2d.%4d",&gps.hh,&gps.mm,&gps.ss,&gps.ms);  
+//                AT_PRINTF("%2d%2d%2d.%4d",&gps.hh,&gps.mm,&gps.ss,&gps.ms);							
                 strncpy(lasttime,word,20);   
             }   
         }   
    
         //定位状态    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GNRMC2:%s\n\r",word);				
         if(word != NULL)   
         {   
             if(word[0] == 'A')   
@@ -482,16 +486,19 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //纬度    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GNRMC3:%s\n\r",word);				
         if(word != NULL)   
         {   
              
             sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
-            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;   
+            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;  
+            PRINTF("%s: %.6f度\n\r",gps.latitude);					
         }   
    
         //南北半球标志    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GNRMC4:%s\n\r",word);				
         if(word != NULL)   
         {   
             if(word[0] == 'S')   
@@ -504,16 +511,19 @@ uint8_t GPS_parse(char *buf)
 
    
         //经度    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);  
+//        AT_PRINTF("GNRMC5:%s\n\r",word);				 
         if(word != NULL)   
         {   
             int d,m,mm;   
             sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
-            gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;   
+            gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
+            PRINTF("%s: %.6f度\n\r",gps.longitude);					
         }   
    
         //东西半球标志    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GNRMC6:%s\n\r",word);				
         if(word != NULL)   
         {   
             if(word[0] == 'W')
@@ -526,29 +536,131 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //对地运动速度    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GNRMC7:%s\n\r",word);				
         if(word != NULL)   
         {   
             gps.speed=my_atof(word)*1.852;   
         }   
    
         //对地运动方向    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GNRMC8:%s\n\r",word);				
         if(word != NULL)   
         {   
             gps.direction=my_atof(word);   
         } 
         
          //utc 日期    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GNRMC9:%s\n\r",word);				
         if(word != NULL)   
         { 
           sscanf(word,"%2d%2d%2d",&gps.DD,&gps.MM,&gps.YY);    
         }  
-    }   
-    else if(!strcmp(word,"GPGGA"))   
+    }		
+    else if(!strcmp(word,"GPRMC"))   
     {   
         //时间戳    
+//			  AT_PRINTF("GPRMC:%s\n\r",word);
+        word=split(left,SEMICOLON,&left);  
+//        AT_PRINTF("GPRMC0:%s\n\r",word);			
+        if(word != NULL)   
+        {   
+            if(strncmp(lasttime,word,20))   
+            {   
+                sscanf(word,"%2d%2d%2d.%4d",&gps.hh,&gps.mm,&gps.ss,&gps.ms);   
+                strncpy(lasttime,word,20);   
+            }   
+        }   
+   
+        //定位状态    
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPRMC1:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            if(word[0] == 'A')   
+                gps.isvalid=1;   
+            else   
+                gps.isvalid=0;   
+        }   
+   
+        //纬度    
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GPRMC2:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+             
+            sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
+            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;   
+        }   
+   
+        //南北半球标志    
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GPRMC3:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            if(word[0] == 'S')   
+              { // gps.latitude=-gps.latitude; 
+                 gps.latNS = 'S';
+              }else{
+                 gps.latNS = 'N';
+              } 
+         }       
+
+   
+        //经度    
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPRMC4:%s\n\r",word);				 
+        if(word != NULL)   
+        {   
+            int d,m,mm;   
+            sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
+            gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;   
+        }   
+   
+        //东西半球标志    
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPRMC5:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            if(word[0] == 'W')
+            {   
+                gps.lgtEW = 'W';
+               // gps.longitude=-gps.longitude;
+            } else{
+                gps.lgtEW = 'E';
+            }  
+        }   
+   
+        //对地运动速度    
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPRMC6:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            gps.speed=my_atof(word)*1.852;   
+        }   
+   
+        //对地运动方向    
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPRMC7:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            gps.direction=my_atof(word);   
+        } 
+        
+         //utc 日期    
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPRMC8:%s\n\r",word);				
+        if(word != NULL)   
+        { 
+          sscanf(word,"%2d%2d%2d",&gps.DD,&gps.MM,&gps.YY);    
+        }  
+    } 
+    else if(!strcmp(word,"GPGGA"))   
+    {   
+        //时间戳  
+//        AT_PRINTF("GPGGA:%s\n\r",word);			
         word=split(left,SEMICOLON,&left);   
         if(word != NULL)   
         {   
@@ -560,7 +672,8 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //纬度    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGGA1:%s\n\r",word);				
         if(word != NULL)   
         {   
             int d,m,mm;   
@@ -569,7 +682,8 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //南北半球标志    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GPGGA2:%s\n\r",word);				
         if(word != NULL)   
         {   
             if(word[0] == 'S')   
@@ -581,7 +695,8 @@ uint8_t GPS_parse(char *buf)
          }    
    
         //经度    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GPGGA3:%s\n\r",word);				 
         if(word != NULL)   
         {   
             int d,m,mm;   
@@ -590,7 +705,8 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //东西半球标志    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGGA4:%s\n\r",word);					
         if(word != NULL)   
         {   
             if(word[0] == 'W')
@@ -603,21 +719,24 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //定位有效性及格式    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGGA5:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.FixMode=my_atoi(word);   
         }   
    
         //捕捉卫星数量    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GPGGA6:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.usedsatnum=my_atoi(word);   
         }   
    
         //估计误差    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGGA7:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.HDOP=my_atof(word); 
@@ -626,14 +745,16 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //海拔高度    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGGA8:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.altitude=my_atof(word);   
         }   
    
         //高度单位    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGGA9:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.altitudeunit=word[0];   
@@ -643,15 +764,18 @@ uint8_t GPS_parse(char *buf)
     {   
         
    
-        //消息总数    
-        word=split(left,SEMICOLON,&left);   
+        //消息总数   
+//        AT_PRINTF("GPGSV:%s\n\r",word);			
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGSV1:%s\n\r",word);			
         if(word != NULL)   
         {   
             msgcount=my_atoi(word);   
         }   
    
         //消息编号    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GPGSV2:%s\n\r",word);				
         if(word != NULL)   
         {   
             msgid=my_atoi(word);   
@@ -664,7 +788,8 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //卫星总数    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GPGSV4:%s\n\r",word);				
         if(word != NULL)   
         {   
             gps.allsatnum=my_atoi(word);   
@@ -681,21 +806,24 @@ uint8_t GPS_parse(char *buf)
             }   
    
             //卫星仰角    
-            word=split(left,SEMICOLON,&left);   
+            word=split(left,SEMICOLON,&left); 
+//            AT_PRINTF("GPGSV5:%s\n\r",word);						
             if(word != NULL)   
             {   
                 gps.satinfo[satcount].elevation=my_atoi(word);   
             }   
    
             //卫星方位角    
-            word=split(left,SEMICOLON,&left);   
+            word=split(left,SEMICOLON,&left); 
+//            AT_PRINTF("GPGSV6:%s\n\r",word);						
             if(word != NULL)   
             {   
                 gps.satinfo[satcount].azimuth=my_atoi(word);   
             }   
    
             //卫星信号信噪比    
-            word=split(left,SEMICOLON,&left);   
+            word=split(left,SEMICOLON,&left); 
+//            AT_PRINTF("GPGSV7:%s\n\r",word);						
             if(word != NULL)   
             {   
                 gps.satinfo[satcount].snr=my_atoi(word);   
@@ -712,15 +840,18 @@ uint8_t GPS_parse(char *buf)
     }   
     else if(!strcmp(word,"GPGSA"))   
     {   
+//			  AT_PRINTF("GPGSA:%s\n\r",word);
         //定位模式1    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGSA1:%s\n\r",word);			
         if(word != NULL)   
         {   
             gps.GSA_mode1=my_atoi(word);   
         }   
    
         //定位模式2    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGSA2:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.GSA_mode2=my_atoi(word);   
@@ -739,27 +870,84 @@ uint8_t GPS_parse(char *buf)
         }   
    
         //位置精度值    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGSA3:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.PDOP=(float)my_atof(word);   
         }   
    
         //水平精度值    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GPGSA4:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.HDOP=(float)my_atof(word);   
         }   
    
         //高度精度值    
-        word=split(left,SEMICOLON,&left);   
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GPGSA4:%s\n\r",word);					
         if(word != NULL)   
         {   
             gps.VDOP=(float)my_atof(word);   
         }       
     }  
-    
+    else if(!strcmp(word,"GNGSA"))   
+    {   
+        //定位模式1 
+//        AT_PRINTF("GNGSA:%s\n\r",word);			
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GNGSA1:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            gps.GSA_mode1=my_atoi(word);   
+        }   
+   
+        //定位模式2    
+        word=split(left,SEMICOLON,&left);
+//        AT_PRINTF("GNGSA2:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            gps.GSA_mode2=my_atoi(word);   
+        }   
+   
+
+          
+        for(i=0;i<12;i++)   
+        {   
+            word=split(left,SEMICOLON,&left);   
+            if(word != NULL)   
+            {   
+                gps.usedsat[i]=my_atoi(word);   
+                usedsatcount++;   
+            }   
+        }   
+   
+        //位置精度值    
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GNGSA3:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            gps.PDOP=(float)my_atof(word);   
+        }   
+   
+        //水平精度值    
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GNGSA4:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            gps.HDOP=(float)my_atof(word);   
+        }   
+   
+        //高度精度值    
+        word=split(left,SEMICOLON,&left); 
+//        AT_PRINTF("GNGSA5:%s\n\r",word);				
+        if(word != NULL)   
+        {   
+            gps.VDOP=(float)my_atof(word);   
+        }       
+    }     
     if(gps.latitude > 90.0)
       gps.latitude = 0.0;
 
@@ -784,7 +972,7 @@ struct {
 	
     static  uint8_t NEMA_count = 0;
     static  uint8_t char_count = 0;
-		 uint8_t Empty = 0;
+//		 uint8_t Empty = 0;
     if(isFirmwareUpdate == 1)     //更新固件
       return;
     if(buffer == '$')
@@ -899,38 +1087,38 @@ uint8_t GPS_INFO_update(void)
 
 void GPS_INPUT(void)
 {
-	  int dd,mm;
-    FP32 ss;
-	
+//	  int dd,mm;
+//    FP32 ss;
+//	
 	  GPS_INFO_update();
 //    GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
-	
+//	
 //    AT_PRINTF("%s:%3d %2d'%5.2f ",(gps.latNS == 'N')?"北纬":"南纬",dd, mm, ss);
 //    AT_PRINTF("%s: %.6f度\n\r",(gps.latNS == 'N')?"北纬":"南纬",gps.latitude);
 
 //    GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
 //    AT_PRINTF("%s:%3d %2d'%05.2f\n\r ",(gps.lgtEW == 'E')?"东经":"西经",dd, mm, ss);
-//	  AT_PRINTF_F("%s: %.6f度\n\r ",(gps.lgtEW == 'E')?"东经":"西经",gps.longitude);
-//    AT_PRINTF_F("海拔:%.1f%c    ",gps.altitude,gps.altitudeunit);
-//    AT_PRINTF_F("速度:%.1f km/h    ",gps.speed);
-//    AT_PRINTF_F("航向:%.1f度    ",gps.direction);
-//    AT_PRINTF_F("时间:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);   
-//    AT_PRINTF_F("日期:20%02d-%d-%d  ",gps.YY,gps.MM,gps.DD); 
-//    AT_PRINTF_F("卫星:%2d/%2d\n\r",gps.usedsatnum,gps.allsatnum);
+//	  AT_PRINTF("%s: %.6f度\n\r ",(gps.lgtEW == 'E')?"东经":"西经",gps.longitude);
+//    AT_PRINTF("海拔:%.1f%c    ",gps.altitude,gps.altitudeunit);
+//    AT_PRINTF("速度:%.1f km/h    ",gps.speed);
+//    AT_PRINTF("航向:%.1f度    ",gps.direction);
+//    AT_PRINTF("时间:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);   
+//    AT_PRINTF("日期:20%02d-%d-%d  ",gps.YY,gps.MM,gps.DD); 
+//    AT_PRINTF("卫星:%2d/%2d\n\r",gps.usedsatnum,gps.allsatnum);
 
     switch(gps.FixMode)
     {
         case 0:
-					//AT_PRINTF_F("GPS状态:未定位   \n\r");
+//					AT_PRINTF("GPS状态:未定位   \n\r");
 				break;
         case 1: 
-//					AT_PRINTF_F("GPS状态:%dD SPS  \n\r ",gps.GSA_mode2);
+//					AT_PRINTF("GPS状态:%dD SPS  \n\r ",gps.GSA_mode2);
 				break;
         case 2:
-//					AT_PRINTF_F("GPS状态:%dD DGPS  \n\r",gps.GSA_mode2);
+//					AT_PRINTF("GPS状态:%dD DGPS  \n\r",gps.GSA_mode2);
 				break;
         case 6:
-//					AT_PRINTF_F("GPS状态:估算中    \n\r");
+//					AT_PRINTF("GPS状态:估算中    \n\r");
 				break;
         default :break;                                                 
     }

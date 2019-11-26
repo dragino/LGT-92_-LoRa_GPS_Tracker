@@ -312,9 +312,23 @@ void RegionCommonComputeRxWindowParameters( double tSymbol, uint8_t minRxSymbols
 int8_t RegionCommonComputeTxPower( int8_t txPowerIndex, float maxEirp, float antennaGain )
 {
     int8_t phyTxPower = 0;
-
-    phyTxPower = ( int8_t )floor( ( maxEirp - ( txPowerIndex * 2U ) ) - antennaGain );
-
+	  switch(txPowerIndex)
+		{
+			case 40:phyTxPower=10;break;
+			case 41:phyTxPower=11;break;
+			case 42:phyTxPower=12;break;
+			case 43:phyTxPower=13;break;
+			case 44:phyTxPower=14;break;
+			case 45:phyTxPower=15;break;
+			case 46:phyTxPower=16;break;
+			case 47:phyTxPower=17;break;
+			case 48:phyTxPower=18;break;
+			case 49:phyTxPower=19;break;	
+			case 50:phyTxPower=20;break;			
+			default:
+					phyTxPower = ( int8_t )floor( ( maxEirp - ( txPowerIndex * 2U ) ) - antennaGain );
+				  break;
+		}
     return phyTxPower;
 }
 
@@ -360,3 +374,31 @@ void RegionCommonCalcBackOff( RegionCommonCalcBackOffParams_t* calcBackOffParams
         }
     }
 }
+
+//void RegionCommonRxBeaconSetup( RegionCommonRxBeaconSetupParams_t* rxBeaconSetupParams )
+//{
+//    bool rxContinuous = true;
+//    uint8_t datarate;
+
+//    // Set the radio into sleep mode
+//    Radio.Sleep( );
+
+//    // Setup frequency and payload length
+//    Radio.SetChannel( rxBeaconSetupParams->Frequency );
+//    Radio.SetMaxPayloadLength( MODEM_LORA, rxBeaconSetupParams->BeaconSize );
+
+//    // Check the RX continuous mode
+//    if( rxBeaconSetupParams->RxTime != 0 )
+//    {
+//        rxContinuous = false;
+//    }
+
+//    // Get region specific datarate
+//    datarate = rxBeaconSetupParams->Datarates[rxBeaconSetupParams->BeaconDatarate];
+
+//    // Setup radio
+//    Radio.SetRxConfig( MODEM_LORA, rxBeaconSetupParams->BeaconChannelBW, datarate,
+//                       1, 0, 10, rxBeaconSetupParams->SymbolTimeout, true, rxBeaconSetupParams->BeaconSize, false, 0, 0, false, rxContinuous );
+
+//    Radio.Rx( rxBeaconSetupParams->RxTime );
+//}

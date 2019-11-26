@@ -506,39 +506,39 @@ static const struct ATCommand_s ATCommand[] =
     .run = at_return_error,
   },
 
-//	{
-//    .string = AT_DCE,
-//    .size_string = sizeof(AT_DCE) - 1,
-//#ifndef NO_HELP
-//    .help_string = "AT"AT_DCE ": Get or set the application data transmission duty cycle in ms\r\n",
-//#endif
-//    .get = at_DCE_get,
-//    .set = at_DCE_set,
-//    .run = at_return_error,
-//  },	
-//	
-	{
-    .string = AT_GPST,
-    .size_string = sizeof(AT_GPST) - 1,
-#ifndef NO_HELP
-    .help_string = "AT"AT_GPST ": Get or set the GPS positioning time in s\r\n",
-#endif
-    .get = at_gpst_get,
-    .set = at_gpst_set,
-    .run = at_return_error,
-  },	
-
 	{
     .string = AT_ACE,
     .size_string = sizeof(AT_ACE) - 1,
 #ifndef NO_HELP
-    .help_string = "AT"AT_ACE ": Get or set the application data transmission duty cycle in ms\r\n",
+    .help_string = "AT"AT_ACE ": Get or set the Alarm data transmission interval in ms\r\n",
 #endif
     .get = at_ACE_get,
     .set = at_ACE_set,
     .run = at_return_error,
   },	
 	
+		{
+	  .string = AT_KAT,
+    .size_string = sizeof(AT_KAT) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_KAT ": Get or set the keep alive time data transmission interval in ms\r\n",
+#endif
+    .get = at_KAT_get,
+    .set = at_KAT_set,
+    .run = at_return_error,
+	},
+		
+	{
+    .string = AT_FTIME,
+    .size_string = sizeof(AT_FTIME) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_FTIME ": Get or set the GPS positioning time in s\r\n",
+#endif
+    .get = at_ftime_get,
+    .set = at_ftime_set,
+    .run = at_return_error,
+  },	
+
 	{
     .string = AT_PORT,
     .size_string = sizeof(AT_PORT) - 1,
@@ -565,46 +565,46 @@ static const struct ATCommand_s ATCommand[] =
 	  .string = AT_SGM,
     .size_string = sizeof(AT_SGM) - 1,
 #ifndef NO_HELP
-    .help_string = "AT"AT_SGM ": Get or set the Disable Motion Sensor (1), Enable Motion Sensor(0)\r\n",
+    .help_string = "AT"AT_SGM ": Get or set the status of Motion Sensor  (Disable(1), Enable (0))\r\n",
 #endif
     .get = at_sgm_get,
     .set = at_sgm_set,
     .run = at_return_error,
 	},
-	
-	#if defined( REGION_US915 ) || defined( REGION_US915_HYBRID ) || defined ( REGION_AU915 ) || defined ( REGION_CN470 )
-	{
-	  .string = AT_CHE,
-    .size_string = sizeof(AT_CHE) - 1,
-#ifndef NO_HELP
-    .help_string = "AT"AT_CHE ": Get or Set eight channels mode,Only for US915,AU915,CN470\r\n",
-#endif
-    .get = at_CHE_get,
-    .set = at_CHE_set,
-    .run = at_return_error,
-	},
-	#endif
-  	{
-	  .string = AT_STD,
-    .size_string = sizeof(AT_STD) - 1,
-#ifndef NO_HELP
-    .help_string = "AT"AT_STD ": Reset Parameters to Factory Default, Keys Reserve\r\n",
-#endif
-    .get = at_return_error,
-    .set = at_return_error,
-    .run = at_STD,
-  },
 
-	{
-	  .string = AT_CFG,
-    .size_string = sizeof(AT_CFG) - 1,
+		{
+	  .string = AT_MD,
+    .size_string = sizeof(AT_MD) - 1,
 #ifndef NO_HELP
-    .help_string = "AT"AT_CFG ": Print all configurations\r\n",
+    .help_string = "AT"AT_MD ": Get or set the mode of Motion detection (0:Disable,1:Move,2:Collide,3:User)\r\n",
 #endif
-    .get = at_return_error,
-    .set = at_return_error,
+    .get = at_md_get,
+    .set = at_md_set,
     .run = at_return_error,
 	},
+
+		{
+	  .string = AT_LON,
+    .size_string = sizeof(AT_LON) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_LON ": Get or set the LED flashing of position,downlink and uplink (Disable(0), Enable (1))\r\n",
+#endif
+    .get = at_lon_get,
+    .set = at_lon_set,
+    .run = at_return_error,
+	},
+		
+		{
+	  .string = AT_MLON,
+    .size_string = sizeof(AT_MLON) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_MLON ": Get or set the LED of Motion detection(Disable(0), Enable (1))\r\n",
+#endif
+    .get = at_mlon_get,
+    .set = at_mlon_set,
+    .run = at_return_error,
+	},	
+
 
   {
 	  .string = AT_RX1WTO,
@@ -627,6 +627,31 @@ static const struct ATCommand_s ATCommand[] =
     .set = at_symbtimeout2LSB_set,
     .run = at_return_error,
 	 },	
+	
+	#if defined( REGION_US915 ) || defined( REGION_US915_HYBRID ) || defined ( REGION_AU915 ) || defined ( REGION_CN470 )
+	{
+	  .string = AT_CHE,
+    .size_string = sizeof(AT_CHE) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_CHE ": Get or Set eight channels mode,Only for US915,AU915,CN470\r\n",
+#endif
+    .get = at_CHE_get,
+    .set = at_CHE_set,
+    .run = at_return_error,
+	},
+	#endif
+
+	{
+	  .string = AT_CFG,
+    .size_string = sizeof(AT_CFG) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_CFG ": Print all configurations\r\n",
+#endif
+    .get = at_return_error,
+    .set = at_return_error,
+    .run = at_return_error,
+	},
+
 };
 
 

@@ -65,30 +65,32 @@ static __IO uint16_t AD_code1=0;
 static __IO uint16_t AD_code2=0;
 uint16_t AD_code3=0;
 
+extern uint32_t LON ;
+
 extern uint16_t batteryLevel_mV;
 void BSP_sensor_Read( sensor_t *sensor_data)
 {
-  HAL_GPIO_WritePin(OIL_CONTROL_PORT,OIL_CONTROL_PIN,GPIO_PIN_RESET);
-	AD_code1=HW_AdcReadChannel( ADC_Channel_Oil );
-	HAL_GPIO_WritePin(OIL_CONTROL_PORT,OIL_CONTROL_PIN,GPIO_PIN_SET);
+  HAL_GPIO_WritePin(battery_CONTROL_PORT,battery_CONTROL_PIN,GPIO_PIN_RESET);
+	AD_code1=HW_AdcReadChannel( ADC_Channel_battery );
+	HAL_GPIO_WritePin(battery_CONTROL_PORT,battery_CONTROL_PIN,GPIO_PIN_SET);
 
 	HW_GetBatteryLevel( );
 //	sensor_data->oil=AD_code1*batteryLevel_mV/4095;
   AD_code2 = AD_code1*batteryLevel_mV/4095;
 	AD_code3 = (AD_code2*57/47);
-//	PRINTF("\n\rAD_code3=%d  ", AD_code3);
+//	PRINTF("\n\rAD_code3=%d  \n\r", AD_code3);
 //	if(AD_code2 <= 3050)
 //	{
 //		gps_state_no();
 //		lora_state_Led();
 //	}
-  sensor_data->oil = AD_code2*(47 + 10)/47;
+  sensor_data->bat_mv = AD_code2*(47 + 10)/47;
 }
 
 void  BSP_sensor_Init( void  )
 {
 	  GPIO_InitTypeDef GPIO_InitStructure; 
-	  BSP_oil_float_Init();
+	  BSP_battery_Init();
   	LED_CLK_ENABLE();  
 	
 	  GPIO_InitStructure.Pin =   LED1_PIN | LED0_PIN | LED3_PIN  ;
@@ -143,22 +145,23 @@ void  BSP_powerLED_DeInit( void  )
 
 void powerLED(void)
 {
+
 	BSP_powerLED_Init();
 	LED0_1 ;
 	HAL_Delay(1000);
   LED0_0;
+
 }
-void  BSP_oil_float_Init( void )
+void  BSP_battery_Init( void )
 {
 	GPIO_InitTypeDef GPIO_InitStruct={0};
 	__HAL_RCC_GPIOA_CLK_ENABLE();
-	GPIO_InitStruct.Pin = OIL_CONTROL_PIN;
+	GPIO_InitStruct.Pin = battery_CONTROL_PIN;
   GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  HAL_GPIO_Init(OIL_CONTROL_PORT, &GPIO_InitStruct);
+  HAL_GPIO_Init(battery_CONTROL_PORT, &GPIO_InitStruct);
 	
-	HAL_GPIO_WritePin(OIL_CONTROL_PORT,OIL_CONTROL_PIN,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(battery_CONTROL_PORT,battery_CONTROL_PIN,GPIO_PIN_SET);
 }
-
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -75,7 +75,7 @@ typedef struct{
 	
 	float oil;  //oil float
 	
-	uint8_t PA1_mv;//PA1
+	float  bat_mv;//PA0
 
 	
 	float temp_sht;
@@ -103,7 +103,7 @@ void  BSP_powerLED_Init( void  );
 
 void  BSP_powerLED_DeInit( void  );
 
-void  BSP_oil_float_Init( void );
+void  BSP_battery_Init( void );
 
 void powerLED(void);
 

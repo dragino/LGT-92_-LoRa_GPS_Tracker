@@ -502,6 +502,8 @@ GPSState_t lora_getGPSState( void );
 
 void lora_state_INT(void);
 
+void MPU9250_INT(void);
+
 void lora_state_Led(void);
 
 void lora_state_Wake_Join(void);

@@ -22,9 +22,10 @@
 #include "IIC.h"
 #include "mpu9250.h"
 #include "filter.h"
+#include "lora.h"
 #include "flash_eraseprogram.h"
 
-static float gyro_offsetx=0.005199,gyro_offsety=0.035498,gyro_offsetz=0.005152;
+//static float gyro_offsetx=0.005199,gyro_offsety=0.035498,gyro_offsetz=0.005152;
 float tmp1,tmp2,tmp3;
 float magoffsetx=1.31454428611172,magoffsety=-1.21753632395713,magoffsetz=1.6567777185719;
 float B[6]={0.980358187761106,-0.0105514731414606,0.00754899338354401,0.950648704823113,-0.0354995317649016,1.07449478456729};
@@ -40,36 +41,43 @@ short accoldx,accoldy,accoldz;
 short magoldx,magoldy,magoldz;
 short gyrooldx,gyrooldy,gyrooldz;
 
+extern uint32_t MD ;
+extern uint32_t Threshold ;
+extern uint32_t Freq ;
+extern uint32_t Server_TX_DUTYCYCLE;
+
+uint8_t TF[2]={0x9F,0x07};
+
 uint8_t MPU_Init(void)
 {
     uint8_t res=0;
    
-    MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X80);//复位MPU9250
+    MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X80);//reset MPU9250
     HAL_Delay(100);  //延时100ms
-    MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X00);//唤醒MPU9250
-    MPU_Set_Gyro_Fsr(3);					        	//陀螺仪传感器,±2000dps
-	MPU_Set_Accel_Fsr(2);					       	 	//加速度传感器,±8g
-    MPU_Set_Rate(200);						       	 	//设置采样率200Hz
-    MPU_Write_Byte(MPU9250_ADDR,MPU_INT_EN_REG,0X00);   //关闭所有中断	
+    MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X00);//wake MPU9250
+    MPU_Set_Gyro_Fsr(3);					        	//Gyro sensor,±2000dps
+	  MPU_Set_Accel_Fsr(2);					       	 	//Acceleration gyro sensor,±8g
+    MPU_Set_Rate(200);						       	 	//Set sampling frequency 200Hz
+    MPU_Write_Byte(MPU9250_ADDR,MPU_INT_EN_REG,0X00);   //Close all interrupts	
 	
-	MPU_Write_Byte(MPU9250_ADDR,MPU_USER_CTRL_REG,0X00);//I2C主模式关闭
-	MPU_Write_Byte(MPU9250_ADDR,MPU_FIFO_EN_REG,0X00);	//关闭FIFO
-	MPU_Write_Byte(MPU9250_ADDR,MPU_INTBP_CFG_REG,0X82);//INT引脚低电平有效，开启bypass模式，可以直接读取磁力计
-    res=MPU_Read_Byte(MPU9250_ADDR,MPU_DEVICE_ID_REG);  //读取MPU6500的ID
-    if(res==MPU6500_ID1||res==MPU6500_ID2) //器件ID正确
+	 MPU_Write_Byte(MPU9250_ADDR,MPU_USER_CTRL_REG,0X00);//I2C Main mode off
+	 MPU_Write_Byte(MPU9250_ADDR,MPU_FIFO_EN_REG,0X00);	// off FIFO
+	 MPU_Write_Byte(MPU9250_ADDR,MPU_INTBP_CFG_REG,0X82);//The INT pin is active low,the bypass mode is enabled,and the magnetometer can be read directly.
+   res=MPU_Read_Byte(MPU9250_ADDR,MPU_DEVICE_ID_REG);  //Read the ID of MPU9250
+    if(res==MPU6500_ID1||res==MPU6500_ID2) //Correct ID
     {
-        MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X01);  	//设置CLKSEL,PLL X轴为参考
+        MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X01);  	//Set CLKSEL,PLL, X axis as reference
 			HAL_Delay(50);
-        MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X00);  	//加速度与陀螺仪都工作
-		MPU_Set_Rate(200);						       	//设置采样率为200Hz   
+        MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X00);  	//Acceleration and gyroscope work
+		MPU_Set_Rate(200);						       	//Set sampling frequency 200Hz   
     }else return 1;
  
-    res=MPU_Read_Byte(AK8963_ADDR,MAG_WIA);    			//读取AK8963 ID   
+    res=MPU_Read_Byte(AK8963_ADDR,MAG_WIA);    			//Read the ID of AK8963  
     if(res==AK8963_ID)
     {
-        MPU_Write_Byte(AK8963_ADDR,MAG_CNTL2,0X01);		//复位AK8963
+        MPU_Write_Byte(AK8963_ADDR,MAG_CNTL2,0X01);		//Reset AK8963
 		HAL_Delay(50);
-        MPU_Write_Byte(AK8963_ADDR,MAG_CNTL1,0X11);		//设置AK8963为单次测量
+        MPU_Write_Byte(AK8963_ADDR,MAG_CNTL1,0X11);		//Set AK8963 as a single measurement
 			
     }else return 1;
 		
@@ -84,27 +92,61 @@ uint8_t MPU_Init(void)
     return 0;
 }
 
-//设置MPU9250陀螺仪传感器满量程范围
+void MPU_INT_Init(void)
+{
+  MPU_Write_Byte(MPU9250_ADDR,0x6B,0X00);//wake
+//  MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X00);  	//Acceleration and gyroscope work
+	
+	MPU_Write_Byte(MPU9250_ADDR,MPU_INTBP_CFG_REG,0X00);
+	MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X00);
+	MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X07);
+	MPU_Write_Byte(MPU9250_ADDR,MPU_ACCEL_CFG2_REG,0X09);
+	MPU_Write_Byte(MPU9250_ADDR,MPU_INT_EN_REG,0X40);
+	MPU_Write_Byte(MPU9250_ADDR,MPU_MDETECT_CTRL_REG,0XC0);
+//	MPU_Write_Byte(MPU9250_ADDR,MPU_MOTION_DET_REG,0X18);
+//	MPU_Write_Byte(MPU9250_ADDR,MPU_LP_ACCEL_ODR_REG,0X05);
+	 if(MD == 1)
+	{
+	  MPU_Write_Byte(MPU9250_ADDR,MPU_MOTION_DET_REG,0X0C);
+	  MPU_Write_Byte(MPU9250_ADDR,MPU_LP_ACCEL_ODR_REG,0X02);	
+	}
+	else if(MD == 2)
+	{
+	  MPU_Write_Byte(MPU9250_ADDR,MPU_MOTION_DET_REG,0X9F);
+	  MPU_Write_Byte(MPU9250_ADDR,MPU_LP_ACCEL_ODR_REG,0X07);		
+	}		
+	else if(MD == 3)
+	{
+		Read_Config();
+		TF[0]=Threshold;
+		TF[1]=Freq;
+		MPU_Write_Byte(MPU9250_ADDR,MPU_MOTION_DET_REG,TF[0]);
+	  MPU_Write_Byte(MPU9250_ADDR,MPU_LP_ACCEL_ODR_REG,TF[1]);			
+	}		
+	MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X20);
+//	HAL_Delay(200);
+}
+//Set the MPU9250 gyro sensor full-scale range
 //fsr:0,±250dps;1,±500dps;2,±1000dps;3,±2000dps
-//返回值:0,设置成功
-//    其他,设置失败 
+//Return value: 0,set successfully
+//          Other,setup failed
 uint8_t MPU_Set_Gyro_Fsr(uint8_t fsr)
 {
 	return MPU_Write_Byte(MPU9250_ADDR,MPU_GYRO_CFG_REG,(fsr<<3)|3);//设置陀螺仪满量程范围  
 }
-//设置MPU9250加速度传感器满量程范围
+//Set the MPU9250 accelerometer full-scale range
 //fsr:0,±2g;1,±4g;2,±8g;3,±16g
-//返回值:0,设置成功
-//    其他,设置失败 
+//Return value: 0,set successfully
+//          Other,setup failed
 uint8_t MPU_Set_Accel_Fsr(uint8_t fsr)
 {
 	return MPU_Write_Byte(MPU9250_ADDR,MPU_ACCEL_CFG_REG,fsr<<3);//设置加速度传感器满量程范围  
 }
 
-//设置MPU9250的数字低通滤波器
-//lpf:数字低通滤波频率(Hz)
-//返回值:0,设置成功
-//    其他,设置失败 
+//Set the digital low-pass filter of the MPU9250
+//lpf:digital low-pass filter frequency(Hz)
+//Return value: 0,set successfully
+//          Other,setup failed
 uint8_t MPU_Set_LPF(uint16_t lpf)
 {
 	uint8_t data=0;
@@ -114,25 +156,25 @@ uint8_t MPU_Set_LPF(uint16_t lpf)
 	else if(lpf>=20)data=4;
 	else if(lpf>=10)data=5;
 	else data=6; 
-	return MPU_Write_Byte(MPU9250_ADDR,MPU_CFG_REG,data);//设置数字低通滤波器  
+	return MPU_Write_Byte(MPU9250_ADDR,MPU_CFG_REG,data);//Set the digital low-pass filter
 }
 
-//设置MPU9250的采样率(假定Fs=1KHz)
+//Set the sampling frequency of the MPU9250(assumed Fs=1KHz)
 //rate:4~1000(Hz)
-//返回值:0,设置成功
-//    其他,设置失败 
+//Return value: 0,set successfully
+//          Other,setup failed
 uint8_t MPU_Set_Rate(uint16_t rate)
 {
 	uint8_t data;
 	if(rate>1000)rate=1000;
 	if(rate<4)rate=4;
 	data=1000/rate-1;
-	data=MPU_Write_Byte(MPU9250_ADDR,MPU_SAMPLE_RATE_REG,data);	//设置数字低通滤波器
- 	return MPU_Set_LPF(rate/2);	//自动设置LPF为采样率的一半
+	data=MPU_Write_Byte(MPU9250_ADDR,MPU_SAMPLE_RATE_REG,data);	//Set the digital low-pass filter
+ 	return MPU_Set_LPF(rate/2);	//Automatically set LPF to half of the sampling frequency
 }
 
 /*
-*@功能：补偿陀螺仪漂移
+*@Function: compensate for gyroscope drift
 *
 *
 */
@@ -144,7 +186,7 @@ void calibrate1(void)
 	float ax2,ay2,az2;
 	float gx2,gy2,gz2,sumx=0,sumy=0,sumz=0,sumx1=0,sumy1=0,sumz1=0;
 	
-	MPU_Write_Byte(MPU9250_ADDR,0x6B,0X00);//唤醒
+	MPU_Write_Byte(MPU9250_ADDR,0x6B,0X00);//wake
   MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X00);
 	
 	for (t=0;t<300;t++)
@@ -160,17 +202,17 @@ void calibrate1(void)
 		sumy1=sumy1+ay2;
 		sumz1=sumz1+az2;
 	}
-	gyro_offsetx=sumx/300.0;
-	gyro_offsety=sumy/300.0;
-	gyro_offsetz=sumz/300.0;
+//	gyro_offsetx=sumx/300.0;
+//	gyro_offsety=sumy/300.0;
+//	gyro_offsetz=sumz/300.0;
 	
 	accoffsetx=sumx1/300.0;
 	accoffsety=sumy1/300.0;
 	accoffsetz=sumz1/300.0-1.0;
 	
-	gyro_offsetx=0;
-	gyro_offsety=0;
-	gyro_offsetz=0;
+//	gyro_offsetx=0;
+//	gyro_offsety=0;
+//	gyro_offsetz=0;
 	
 	accoffsetx=0;
 	accoffsety=0;
@@ -238,8 +280,8 @@ void get_calibrated_data(void)
 	PRINTF("%f\n\r", accoffsetz);
 }
 
-//得到温度值
-//返回值:温度值(扩大了100倍)
+//Get the temperature value
+//Return value:temperature value (expanded by 100 times)
 short MPU_Get_Temperature(void)
 {
     uint8_t buf[2]; 
@@ -252,10 +294,10 @@ short MPU_Get_Temperature(void)
 }
 
 /////////////////////////////////
-//得到陀螺仪值(原始值)，对源数据平均值滤波，并调整陀螺仪方位
-//gx,gy,gz:陀螺仪x,y,z轴的原始读数(带符号)
-//返回值:0,成功
-//    其他,错误代码
+//Get the gyro value(original value),filter the average of the source data,and adjust the gyroscope orientation
+//gx,gy,gz:Raw data of the gyroscope X, Y, Z axis (with symbol)
+//Return value: 0,set successfully
+//          Other,error code
 uint8_t MPU_Get_Gyroscope(short *gy,short *gx,short *gz)
 {
     uint8_t buf[6],res; 
@@ -277,7 +319,7 @@ uint8_t MPU_Get_Gyroscope(short *gy,short *gx,short *gz)
     return res;
 }
 /*
-*@功能：获得陀螺仪数据，单位弧度每秒
+*@Function: Get gyroscope data in radians per second
 *
 *
 */
@@ -294,10 +336,11 @@ uint8_t MPU_Get_Gyro(short *igx,short *igy,short *igz,float *gx,float *gy,float 
 	return res;
 }
 
-//得到加速度值(原始值)，低通滤波并调整加速度计方位
-//gx,gy,gz:陀螺仪x,y,z轴的原始读数(带符号)
-//返回值:0,成功
-//    其他,错误代码
+
+//Get the acceleration value(original value),low pass filter and adjust acceleration orientation
+//ax,ay,az:Raw data of the acceleration X, Y, Z axis (with symbol)
+//Return value: 0,set successfully
+//          Other,error code
 uint8_t MPU_Get_Accelerometer(short *ay,short *ax,short *az)
 {
     uint8_t buf[6],res;  
@@ -320,7 +363,7 @@ uint8_t MPU_Get_Accelerometer(short *ay,short *ax,short *az)
 }
 
 /*
-*@功能：获得加速度计数据，单位g，并对加速度计进行补偿
+*@Function: Obtain accelerometer data in g and conpensate for accelerometer
 *
 *
 */
@@ -350,8 +393,10 @@ uint8_t MPU_Get_Accel(short *iax,short *iay,short *iaz,float *ax,float *ay,float
 }
 //得到磁力计值(原始值)，平均滤波并调整方位
 //mx,my,mz:磁力计x,y,z轴的原始读数(带符号)
-//返回值:0,成功
-//    其他,错误代码
+//Get the acceleration value(original value),low pass filter and adjust acceleration orientation
+//mx,my,mz:Raw data of the acceleration X, Y, Z axis (with symbol)
+//Return value: 0,set successfully
+//          Other,error code
 uint8_t MPU_Get_Magnetometer(short *mx,short *my,short *mz)
 {
     uint8_t buf[6],res;  
@@ -375,7 +420,7 @@ uint8_t MPU_Get_Magnetometer(short *mx,short *my,short *mz)
 }
 
 /*
-*@功能：获得磁力计数据，单位高斯，并对磁力计进行补偿
+*@Function:：获得磁力计数据，单位高斯，并对磁力计进行补偿
 *
 *
 */

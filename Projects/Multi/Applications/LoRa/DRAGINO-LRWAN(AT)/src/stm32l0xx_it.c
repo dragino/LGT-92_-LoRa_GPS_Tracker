@@ -62,8 +62,12 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "hw.h"
 #include "stm32l0xx_it.h"
 #include "vcom.h"
-
+#include "exti_wakeup.h"
+#include "GPS.h"  
+#include "lora.h"
 extern int exti_flag;
+extern uint32_t MD ;
+extern bool is_lora_joined;
 /** @addtogroup STM32L1xx_HAL_Examples
   * @{
   */
@@ -187,6 +191,35 @@ void SysTick_Handler(void)
   HAL_IncTick();
 }
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	HW_GPIO_IrqHandler( GPIO_Pin );
+	if (GPIO_Pin == GPIO_PIN_14)
+	{
+      lora_state_INT();
+	  	POWER_ON();
+	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_14);
+	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+		
+	}
+	HW_GPIO_IrqHandler( GPIO_Pin );
+	if (GPIO_Pin == GPIO_PIN_12)
+	{
+		if(is_lora_joined==1)
+		{
+		  if(MD!=0)
+			{
+			if(lora_getState() != STATE_GPS_SEND)
+			{
+      MPU9250_INT();
+			}
+			}
+	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
+	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+		}
+	}	
+}
+
 /******************************************************************************/
 /*                 STM32L1xx Peripherals Interrupt Handlers                   */
 /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */
@@ -251,7 +284,13 @@ void EXTI4_15_IRQHandler( void )
   
   HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_11 );
 
-  HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_12 );
+//  HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_12 );
+ if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_12) != RESET) 
+  { 
+	 __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
+   HAL_GPIO_EXTI_Callback(GPIO_PIN_12);
+  }
+	
 
   HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_13 );
 

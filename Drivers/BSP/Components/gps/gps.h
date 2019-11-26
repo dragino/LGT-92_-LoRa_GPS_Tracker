@@ -11,6 +11,7 @@
 
 #include "bsp_usart2.h"
 
+
 #ifndef NULL
 #define NULL    ((void *)0)
 #endif

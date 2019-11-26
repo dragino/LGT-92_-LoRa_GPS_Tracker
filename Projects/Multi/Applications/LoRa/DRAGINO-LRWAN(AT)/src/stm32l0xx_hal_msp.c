@@ -189,18 +189,27 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
   * @param  GPIO_Pin: Specifies the pins connected to the EXTI line.
   * @retval None
   */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	HW_GPIO_IrqHandler( GPIO_Pin );
-	if (GPIO_Pin == GPIO_PIN_14)
-	{
-      lora_state_INT();
-	  	POWER_ON();
-	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_14);
-	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-		
-	}
-}
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+//{
+//	HW_GPIO_IrqHandler( GPIO_Pin );
+//	if (GPIO_Pin == GPIO_PIN_14)
+//	{
+//      lora_state_INT();
+//	  	POWER_ON();
+//	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_14);
+//	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+//		
+//	}
+////	HW_GPIO_IrqHandler( GPIO_Pin );
+////	if (GPIO_Pin == GPIO_PIN_12)
+////	{
+////      MPU9250_INT();
+//////	  	POWER_ON();
+////	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
+////	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+////		
+////	}	
+//}
 
 /**
   * @brief  Gets IRQ number as a function of the GPIO_Pin.

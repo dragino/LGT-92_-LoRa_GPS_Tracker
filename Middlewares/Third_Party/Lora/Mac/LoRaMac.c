@@ -32,8 +32,14 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 #include "LoRaMacTest.h"
 #include "bsp.h"
 
-
-
+extern uint8_t symbtime1_value;
+extern uint8_t flag1;
+extern uint8_t symbtime2_value;
+extern uint8_t flag2;
+extern uint8_t send_fail;
+extern uint32_t LON ;
+extern uint32_t GPS_ALARM;
+extern uint32_t GS;
 /*!
  * Maximum PHY layer payload size
  */
@@ -167,8 +173,6 @@ static uint32_t UpLinkCounter = 0;
 uint8_t Alarm_times = 60;
 
 uint8_t Alarm_times1 = 0;
-
-uint8_t Restart = 1;
 
 /*!
  * LoRaMAC frame counter. Each time a packet is received the counter is incremented.
@@ -616,6 +620,7 @@ LoRaMacStatus_t SetTxContinuousWave1( uint16_t timeout, uint32_t frequency, uint
  * \brief Resets MAC specific parameters to default
  */
 static void ResetMacParameters( void );
+void printf_joinmessage(void);
 
 static void OnRadioTxDone( void )
 {
@@ -1126,6 +1131,17 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
     TimerStart( &MacStateCheckTimer );
 }
 
+void printf_joinmessage(void)
+{
+	PPRINTF("\r\n");
+	PPRINTF("Join Accept:\r\n");
+	PPRINTF("DevAddr:%02x %02x %02x %02x\r\n",LoRaMacRxPayload[10],LoRaMacRxPayload[9],LoRaMacRxPayload[8],LoRaMacRxPayload[7]);	
+  PPRINTF("Rx1DrOffset:%d\r\n",( LoRaMacRxPayload[11] >> 4 ) & 0x07);
+	PPRINTF("Rx2Datarate:%d\r\n",LoRaMacRxPayload[11] & 0x0F);
+	PPRINTF("ReceiveDelay1:%lu ms\r\n",LoRaMacParams.ReceiveDelay1);
+	PPRINTF("ReceiveDelay2:%lu ms\r\n",LoRaMacParams.ReceiveDelay2);					
+}
+
 static void OnRadioTxTimeout( void )
 {
     if( LoRaMacDeviceClass != CLASS_C )
@@ -1474,6 +1490,15 @@ static void OnRxWindow1TimerEvent( void )
     RxWindow1Config.RxContinuous = false;
     RxWindow1Config.Window = RxSlot;
 
+		if(flag1==0)                                       //configure the RX1windowtimeout
+    {
+			symbtime1_value=RxWindow1Config.WindowTimeout;
+		}
+    else
+		{
+			RxWindow1Config.WindowTimeout=symbtime1_value;
+		}
+		
     if( LoRaMacDeviceClass == CLASS_C )
     {
         Radio.Standby( );
@@ -1493,6 +1518,15 @@ static void OnRxWindow2TimerEvent( void )
     RxWindow2Config.RepeaterSupport = RepeaterSupport;
     RxWindow2Config.Window = 1;
 
+		if(flag2==0)                                     //configure the RX2windowtimeout
+    {
+			symbtime2_value=RxWindow2Config.WindowTimeout;
+		}
+    else
+		{
+			RxWindow2Config.WindowTimeout=symbtime2_value;
+		}	
+		
     if( LoRaMacDeviceClass != CLASS_C )
     {
         RxWindow2Config.RxContinuous = false;
@@ -2085,10 +2119,6 @@ static void ResetMacParameters( void )
     UpLinkCounter = 0;
     DownLinkCounter = 0;
     AdrAckCounter = 0;
-		BSP_sensor_Init();
-		LED1_1;
-		HAL_Delay(200);	
-		LED1_0;
 	  Alarm_times = 60;
 	  Alarm_times1 = 0;
 	
@@ -2309,10 +2339,26 @@ LoRaMacStatus_t SendFrameOnChannel( uint8_t channel )
     txConfig.MaxEirp = LoRaMacParams.MaxEirp;
     txConfig.AntennaGain = LoRaMacParams.AntennaGain;
     txConfig.PktLen = LoRaMacBufferPktLen;
-
-    PRINTF( "\n\r***** UpLinkCounter= %d *****\n\r", UpLinkCounter );
-	  Restart = 0;
-
+	
+    TimerTime_t ts = TimerGetCurrentTime(); 
+    PPRINTF("\n\r[%lu]", ts);  
+    PPRINTF("***** UpLinkCounter= %d *****\n\r", UpLinkCounter );
+	  
+		if(LON == 1)
+		{		
+			if(send_fail==0)
+			{
+		  if(GPS_ALARM == 0)
+			{
+			BSP_sensor_Init();					
+			LED1_1;
+			HAL_Delay(200);	
+			LED1_0;
+			HAL_Delay(200);				
+			}	
+			}			
+    }
+		
     RegionTxConfig( LoRaMacRegion, &txConfig, &txPower, &TxTimeOnAir );
 
     MlmeConfirm.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
@@ -3030,6 +3076,10 @@ LoRaMacStatus_t LoRaMacMibSetRequestConfirm( MibRequestConfirm_t *mibSet )
 
             if( RegionVerify( LoRaMacRegion, &verify, PHY_TX_POWER ) == true )
             {
+                LoRaMacParams.ChannelsTxPower = verify.TxPower;
+            }
+						else if((verify.TxPower>=40)&&(verify.TxPower<=50))
+						{
                 LoRaMacParams.ChannelsTxPower = verify.TxPower;
             }
             else

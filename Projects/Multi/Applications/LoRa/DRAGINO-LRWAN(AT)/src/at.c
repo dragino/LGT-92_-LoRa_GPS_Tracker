@@ -48,6 +48,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "hw.h"
 #include "at.h"
 #include "utilities.h"
 #include "lora.h"
@@ -73,18 +74,26 @@ extern uint32_t Server_TX_DUTYCYCLE;
 
 extern uint32_t Alarm_TX_DUTYCYCLE;
 
-uint32_t Positioning_time = 1;
+extern uint32_t Keep_TX_DUTYCYCLE;
+
+extern uint32_t start_time;
+
+uint32_t Positioning_time = 150;
 
 uint32_t set_sgm = 0;
-uint32_t s_gm = 0;
 uint32_t start = 0;
 uint32_t s_timer = 1;
-
 uint8_t symbtime1_value=0;  //RX1windowtimeout 
 uint8_t flag1=0;
-
 uint8_t symbtime2_value=0;  //RX2windowtimeout 
 uint8_t flag2=0;
+uint8_t md_flags=0;
+uint32_t LON = 1;
+uint32_t MD = 1;
+uint32_t MLON = 0;
+uint32_t Threshold = 0;
+uint32_t Freq = 0;
+
 /* Private macro -------------------------------------------------------------*/
 /**
  * @brief Macro to return when an error occurs
@@ -216,7 +225,6 @@ ATEerror_t at_FDR(const char *param)
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);
 	AT_PRINTF("OK\n\r");
 	NVIC_SystemReset();
-	s_gm = 0;
 	start = 1;
 	s_timer = 1;
   return AT_OK;
@@ -241,7 +249,6 @@ ATEerror_t at_DevEUI_set(const char *param)
   }
   
   lora_config_deveui_set(DevEUI);
-  s_tdc();
   return AT_OK;
 }
 
@@ -262,7 +269,6 @@ ATEerror_t at_AppEUI_set(const char *param)
   }
   
   lora_config_appeui_set(AppEui);
-  s_tdc();
   return AT_OK;
 }
 
@@ -274,7 +280,6 @@ ATEerror_t at_DevAddr_set(const char *param)
     return AT_PARAM_ERROR;
   }
   lora_config_devaddr_set(DevAddr);
-  s_tdc();
   return AT_OK;
 }
 
@@ -326,7 +331,6 @@ ATEerror_t at_AppKey_set(const char *param)
   }
   
   lora_config_appkey_set(AppKey);
-  s_tdc();
   return AT_OK;
 }
 
@@ -345,7 +349,6 @@ ATEerror_t at_NwkSKey_set(const char *param)
   }
   
   lora_config_nwkskey_set(NwkSKey);
-  s_tdc();
   return AT_OK;
 }
 
@@ -364,7 +367,6 @@ ATEerror_t at_AppSKey_set(const char *param)
   }
   
   lora_config_appskey_set(AppSKey);
-  s_tdc();	
   return AT_OK;
 }
 
@@ -469,7 +471,6 @@ ATEerror_t at_ADR_set(const char *param)
     default:
       return AT_PARAM_ERROR;
   }
-  s_tdc();
   return AT_OK;
 }
 
@@ -498,7 +499,6 @@ ATEerror_t at_TransmitPower_set(const char *param)
   }
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -520,14 +520,66 @@ ATEerror_t at_DataRate_get(const char *param)
 ATEerror_t at_DataRate_set(const char *param)
 {
   int8_t datarate;
-
+	
   if (tiny_sscanf(param, "%hhu", &datarate) != 1)
   {
     return AT_PARAM_ERROR;
   }
-  
+
+#if defined( REGION_AS923 )
+	  if(datarate>=8)
+		{
+    return AT_PARAM_ERROR;			
+		}
+#elif defined( REGION_AU915 )
+	  if((datarate==7)||(datarate>=14))
+		{
+    return AT_PARAM_ERROR;			
+		}
+#elif defined( REGION_CN470 )
+	  if(datarate>=6)	
+		{
+    return AT_PARAM_ERROR;			
+		}
+#elif defined( REGION_CN779 )
+	  if(datarate>=8)
+		{
+    return AT_PARAM_ERROR;			
+		}
+#elif defined( REGION_EU433 )
+	  if(datarate>=8)
+		{
+    return AT_PARAM_ERROR;			
+		}
+#elif defined( REGION_IN865 )
+	  if(datarate>=8)
+		{
+    return AT_PARAM_ERROR;			
+		}
+#elif defined( REGION_EU868 )
+	  if(datarate>=8)
+		{
+    return AT_PARAM_ERROR;			
+		};
+#elif defined( REGION_KR920 )
+	  if(datarate>=6)
+		{
+    return AT_PARAM_ERROR;			
+		}
+#elif defined( REGION_US915 )
+	  if(((datarate>=5)&&(datarate<=7))||(datarate>=14))
+		{
+    return AT_PARAM_ERROR;			
+		}
+#elif defined( REGION_RU864 )
+	  if(datarate>=8)
+		{
+    return AT_PARAM_ERROR;			
+		};
+#endif
+	
   lora_config_tx_datarate_set(datarate) ;
-  s_tdc();	
+
   return AT_OK;
 }
 
@@ -544,7 +596,6 @@ ATEerror_t at_DutyCycle_set(const char *param)
     default:
       return AT_PARAM_ERROR;
   }
-  s_tdc();
   return AT_OK;
 }
 
@@ -589,7 +640,6 @@ ATEerror_t at_PublicNetwork_set(const char *param)
     default:
       return AT_PARAM_ERROR;
   }
-  s_tdc();
   return AT_OK;
 }
 
@@ -622,7 +672,6 @@ ATEerror_t at_Rx2Frequency_set(const char *param)
 
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -656,7 +705,6 @@ ATEerror_t at_Rx2DataRate_set(const char *param)
 
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -685,7 +733,6 @@ ATEerror_t at_Rx1Delay_set(const char *param)
   }
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -714,7 +761,6 @@ ATEerror_t at_Rx2Delay_set(const char *param)
   }
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -743,7 +789,6 @@ ATEerror_t at_JoinAcceptDelay1_set(const char *param)
   }
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -772,7 +817,6 @@ ATEerror_t at_JoinAcceptDelay2_set(const char *param)
   }
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -799,7 +843,6 @@ ATEerror_t at_NetworkJoinMode_set(const char *param)
   }
 
   lora_config_otaa_set(status);
-	s_tdc();
   return AT_OK;
 }
 
@@ -828,7 +871,6 @@ ATEerror_t at_NetworkID_set(const char *param)
   }
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -857,7 +899,6 @@ ATEerror_t at_UplinkCounter_set(const char *param)
   }
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -886,7 +927,6 @@ ATEerror_t at_DownlinkCounter_set(const char *param)
   }
   status = LoRaMacMibSetRequestConfirm(&mib);
   CHECK_STATUS(status);
-  s_tdc();
   return AT_OK;
 }
 
@@ -922,7 +962,6 @@ ATEerror_t at_DeviceClass_set(const char *param)
     default:
       return AT_PARAM_ERROR;
   }
-  s_tdc();
   return AT_OK;
 }
 
@@ -945,7 +984,6 @@ ATEerror_t at_NetworkJoinStatus(const char *param)
     print_d(mibReq.Param.IsNetworkJoined ? 1 : 0);
     return AT_OK;
   }
-  s_tdc();
   return AT_ERROR;
 }
 
@@ -1014,7 +1052,6 @@ ATEerror_t at_SendBinary(const char *param)
   {
     return AT_ERROR;
   }
-  s_tdc();
 }
 
 ATEerror_t at_Send(const char *param)
@@ -1068,7 +1105,6 @@ ATEerror_t at_Send(const char *param)
   {
     return AT_ERROR;
   }
-  s_tdc();
 }
 
 ATEerror_t at_ReceiveBinary(const char *param)
@@ -1120,7 +1156,6 @@ ATEerror_t at_ack_set(const char *param)
     default:
       return AT_PARAM_ERROR;
   }
-  s_tdc();
   return AT_OK;
 }
 
@@ -1150,11 +1185,21 @@ ATEerror_t at_rssi_get(const char *param)
 
 ATEerror_t at_TDC_set(const char *param)
 { 
-	if (tiny_sscanf(param, "%lu", &Server_TX_DUTYCYCLE) != 1)
+	uint32_t txtimeout;
+	
+	if (tiny_sscanf(param, "%lu", &txtimeout) != 1)
   {
     return AT_PARAM_ERROR;
   }
-  s_tdc();
+	
+	if(txtimeout<6000)
+	{
+		PRINTF("TDC setting must be more than 6S\n\r");
+		Server_TX_DUTYCYCLE=6000;
+		return AT_PARAM_ERROR;
+	}
+	
+	Server_TX_DUTYCYCLE=txtimeout;
 	return AT_OK;
 }
 ATEerror_t at_TDC_get(const char *param)
@@ -1173,7 +1218,6 @@ ATEerror_t at_application_port_set(const char *param)
   }
   
   lora_config_application_port_set(application_port) ;
-  s_tdc();
   return AT_OK;
 }
 
@@ -1211,7 +1255,6 @@ ATEerror_t at_CHE_set(const char *param)
 	#endif
 	
 	customize_set8channel_set(fre);
-	s_tdc();
 	return AT_OK;
 }
 
@@ -1254,7 +1297,7 @@ ATEerror_t at_CHE_get(const char *param)
 	  }
 	  PRINTF("\n\r");
   }
-	 else PRINTF("Use default channel");
+	 else PRINTF("Use default channel\r\n");
 	
 	return AT_OK;
 }
@@ -1275,7 +1318,6 @@ ATEerror_t at_CHS_set(const char *param)
 	{
 		return AT_PARAM_ERROR;
 	}
-	s_tdc();
 	return AT_OK;
 }
 
@@ -1302,7 +1344,6 @@ ATEerror_t at_sgm_set(const char *param)
   {
     return AT_PARAM_ERROR;
   }
-	s_tdc();
   return AT_OK;
 }
 
@@ -1312,31 +1353,123 @@ ATEerror_t at_sgm_get(const char *param)
 	return AT_OK;
 }
 
-//ATEerror_t at_DCE_set(const char *param)
-//{ 
-//	if (tiny_sscanf(param, "%lu", &Server_TX_DUTYCYCLE) != 1)
-//  {
-//    return AT_PARAM_ERROR;
-//  }
-//  s_tdc();
-//	return AT_OK;
-//}
-//ATEerror_t at_DCE_get(const char *param)
-//{ 
-//	print_d(Server_TX_DUTYCYCLE);
-//	return AT_OK;
-//}
+ATEerror_t at_md_set(const char *param)
+{
+  uint32_t md,threshold=0,freq=0;
+  if (tiny_sscanf(param, "%d,%d,%d",&md,&threshold,&freq) != 3)
+  {
+	 if (tiny_sscanf(param, "%d",&md) != 1)
+    {
+			 if((threshold>255)&&(freq>255))
+			 {
+       return AT_PARAM_ERROR;
+			 }
+    }
+  }
+	
+	if(md!=0)
+	{
+	 start_time=HW_RTC_GetTimerValue();	
+	}
+	
+  MD=md;
+	Threshold=threshold;
+	Freq=freq;
+  md_flags=1;
+	
+  return AT_OK;
+}
 
-ATEerror_t at_gpst_set(const char *param)
+ATEerror_t at_md_get(const char *param)
 { 
-	if (tiny_sscanf(param, "%lu", &Positioning_time) != 1)
+	if(MD==3)
+	{
+	AT_PRINTF("%d,%d,%d\r\n",
+             MD, Threshold, Freq);	
+	}
+	else
+	{
+	AT_PRINTF("%d\r\n",MD);			
+  }
+	return AT_OK;
+}
+
+ATEerror_t at_KAT_set(const char *param)
+{ 
+	uint32_t txtimeout;
+	
+	if (tiny_sscanf(param, "%lu", &txtimeout) != 1)
   {
     return AT_PARAM_ERROR;
   }
-  s_tdc();
+	
+	if(txtimeout<360000)
+	{
+		PRINTF("KDC setting must be more than 6m\n\r");
+		Keep_TX_DUTYCYCLE=360000;
+		return AT_PARAM_ERROR;
+	}
+	
+	Keep_TX_DUTYCYCLE=txtimeout;	
 	return AT_OK;
 }
-ATEerror_t at_gpst_get(const char *param)
+ATEerror_t at_KAT_get(const char *param)
+{ 
+	print_d(Keep_TX_DUTYCYCLE);
+	return AT_OK;
+}
+
+ATEerror_t at_lon_set(const char *param)
+{
+ 
+  if (tiny_sscanf(param, "%lu", &LON) != 1)
+  {
+    return AT_PARAM_ERROR;
+  }
+  return AT_OK;
+}
+
+ATEerror_t at_lon_get(const char *param)
+{ 
+	print_d(LON);
+	return AT_OK;
+}
+
+ATEerror_t at_mlon_set(const char *param)
+{
+ 
+  if (tiny_sscanf(param, "%lu", &MLON) != 1)
+  {
+    return AT_PARAM_ERROR;
+  }
+  return AT_OK;
+}
+
+ATEerror_t at_mlon_get(const char *param)
+{ 
+	print_d(MLON);
+	return AT_OK;
+}
+
+ATEerror_t at_ftime_set(const char *param)
+{ 
+	uint32_t positime;
+	if (tiny_sscanf(param, "%lu", &positime) != 1)
+  {
+    return AT_PARAM_ERROR;
+  }
+	if(positime<30)
+  {
+		PRINTF("Positioning_time setting must be more than 30S\n\r");	
+    Positioning_time=30;		
+    return AT_PARAM_ERROR;
+  }	
+
+  Positioning_time=positime;
+	
+	return AT_OK;
+}
+ATEerror_t at_ftime_get(const char *param)
 { 
 	print_d(Positioning_time);
 	return AT_OK;
@@ -1345,11 +1478,20 @@ ATEerror_t at_gpst_get(const char *param)
 
 ATEerror_t at_ACE_set(const char *param)
 { 
-	if (tiny_sscanf(param, "%lu", &Alarm_TX_DUTYCYCLE) != 1)
+	uint32_t ACEtime;
+	if (tiny_sscanf(param, "%lu", &ACEtime) != 1)
   {
     return AT_PARAM_ERROR;
   }
-  s_tdc();
+	if(ACEtime<10000)
+  {
+		Alarm_TX_DUTYCYCLE=10000;
+		PRINTF("ACEtime setting must be more than 10S\n\r");			
+    return AT_PARAM_ERROR;
+	}
+	
+	Alarm_TX_DUTYCYCLE=ACEtime;
+	
 	return AT_OK;
 }
 ATEerror_t at_ACE_get(const char *param)
@@ -1358,13 +1500,6 @@ ATEerror_t at_ACE_get(const char *param)
 	return AT_OK;
 }
 
-ATEerror_t at_STD(const char *param)
-{
-	s_gm = 0;
-	start = 1;
-	s_timer = 0;
-  return AT_OK;
-}
 
 ATEerror_t at_symbtimeout1LSB_get(const char *param)
 { 
@@ -1492,19 +1627,4 @@ static void print_u(unsigned int value)
   AT_PRINTF("%u\r\n", value);
 }
 
-void s_tdc()
-{
-	if(s_timer == 0)
-  {
-	 s_gm = 1;
-	 start = 1;
-	 s_timer = 1;
-	
-	}
-	else
-	{
-	 s_timer = 1;
 
-	}	
-
-}

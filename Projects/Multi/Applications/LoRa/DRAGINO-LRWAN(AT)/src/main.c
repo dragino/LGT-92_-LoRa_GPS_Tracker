@@ -81,14 +81,29 @@ uint32_t Server_TX_DUTYCYCLE=300000;
 
 uint32_t Alarm_TX_DUTYCYCLE=60000;
 
+uint32_t Keep_TX_DUTYCYCLE=21600000;
+
 uint32_t GPS_ALARM=0;
+
+uint32_t GS=0;
 
 extern uint32_t set_sgm;
 
-extern uint32_t s_gm;
-extern uint8_t Restart;
+extern uint32_t LON ;
+extern uint32_t MD ;
+extern uint32_t MLON ;
+extern uint32_t Threshold ;
+extern uint32_t Freq ;
+extern uint8_t mpuint_flags;
+
+uint32_t CHE = 0;
 
 int ALARM = 0;
+
+uint32_t FLAG=0;
+
+uint8_t send_fail=0;
+
 /*!
  * LoRaWAN Adaptive Data Rate
  * @note Please note that when ADR is enabled the end-device should be static
@@ -133,7 +148,9 @@ int exti_de=0;
 
 static uint32_t ServerSetTDC;
 
-static uint32_t AlarmSetTDC;
+uint32_t start_time=0;
+	
+uint32_t AlarmSetTDC;
 
 uint8_t TDC_flag=0;
 
@@ -149,17 +166,25 @@ extern uint16_t AD_code3;
 
 extern uint32_t Positioning_time;
 
-uint32_t Start_times=0,End_times=0;
+extern uint8_t md_flags;
+
+uint32_t Start_times=0,End_times=0,gps_time = 0;;
 
 FP32 gps_latitude ,gps_longitude;
 
-uint32_t longitude;
+int32_t longitude;
 
-uint32_t latitude;
+int32_t latitude;
 
 uint32_t SendData=0;
 
 uint16_t batteryLevel_mV;
+
+uint16_t TIMES = 10000;
+
+bool is_lora_joined=0;
+
+bool motion_flags=0;
 
 float Roll_basic=0,Pitch_basic=0,Yaw_basic=0;
 float Roll_sum=0,Pitch_sum=0,Yaw_sum=0;
@@ -200,9 +225,16 @@ void send_ALARM_data(void);
 static void LoraStartTx(TxEventType_t EventType);
 
 static TimerEvent_t TxTimer;
+static TimerEvent_t TxTimer2;
 
 /* tx timer callback function*/
 static void OnTxTimerEvent( void );
+
+static void time(TxEventType_t EventType);
+
+static void timing( void );
+
+extern void printf_joinmessage(void);
 #endif
 
 /* Private variables ---------------------------------------------------------*/
@@ -223,12 +255,12 @@ static  LoRaParam_t LoRaParamInit= {LORAWAN_ADR_STATE,
                                     LORAWAN_PUBLIC_NETWORK,
                                     JOINREQ_NBTRIALS};
 
-#define Kp 40.0f                       // proportional gain governs rate of convergence toaccelerometer/magnetometer
-	 //Kp比例增益 决定了加速度计和磁力计的收敛速度
-#define Ki 0.02f          // integral gain governs rate of convergenceof gyroscope biases
-		//Ki积分增益 决定了陀螺仪偏差的收敛速度
-#define halfT 0.0048f      // half the sample period  
-		//halfT采样周期的一半
+#define Kp 40.0f        // proportional gain governs rate of convergence toaccelerometer/magnetometer
+																		
+#define Ki 0.02f        // integral gain governs rate of convergenceof gyroscope biases
+	
+#define halfT 0.0048f   // half the sample period  
+	
 #define dt 0.0096f		
 /***************************************************/
 
@@ -274,7 +306,7 @@ void CalibrateToZero(void);
   */
 int main( void )
 {
-	uint8_t t=0;
+//	uint8_t t=0;
   /* STM32 HAL library initialization*/
   HAL_Init( );
   
@@ -302,19 +334,9 @@ int main( void )
 	powerLED();
 	
 	IIC_GPIO_MODE_Config();
-	HAL_Delay(10);
-	t=MPU_Init();
-	while (t)
-	{
-		PRINTF("MPU_Init error\n\r");
-		HAL_Delay(200);
-	}
-	Restart = 0;		
-  /*Disbale Stand-by mode*/
-// if(lora_getState() != STATE_WAKE_JOIN)
-//	{
+
   LPM_SetOffMode(LPM_APPLI_Id , LPM_Disable );
-//  }
+
   
   /* Configure the Lora Stack*/
   LORA_Init( &LoRaMainCallbacks, &LoRaParamInit);
@@ -322,19 +344,31 @@ int main( void )
   while( 1 )
   {
 		/* Handle UART commands */
-    CMD_Process();
-		
-		if(s_gm == 1)
-		{
-//	   lora_send_fsm();
-		 lora_send();
-		 if(Restart == 1)
-	   {
-		  NVIC_SystemReset();
-      Restart = 0;		 
-	   }
-		}
+    CMD_Process();	
 
+		if(md_flags==1)
+		{
+			MPU_INT_Init();		
+      md_flags=0;			
+		}
+			
+		lora_send();
+
+		if((motion_flags==1)&&(mpuint_flags==1))
+		{
+			TimerInit( &TxTimer, OnTxTimerEvent );
+			gps.latitude = 0;
+			gps.longitude = 0;
+			lora_state_GPS_Send();      			
+		  lora_send();
+			APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
+			TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
+      /*Wait for next tx slot*/
+      TimerStart( &TxTimer);
+			motion_flags=0;		
+			PPRINTF("Exit static mode\r\n");
+		}
+		
     DISABLE_IRQ( );
     /*
      * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
@@ -342,7 +376,7 @@ int main( void )
      * don't go in low power mode if we just received a char
      */
 #ifndef LOW_POWER_DISABLE
-		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
     LPM_EnterLowPower();
 #endif
     ENABLE_IRQ();
@@ -355,15 +389,42 @@ int main( void )
 static void LORA_HasJoined( void )
 {
   AT_PRINTF("JOINED\n\r");
+
+	BSP_sensor_Init();
+	LED3_1;
+	LED1_1;  	
+	HAL_Delay(1000);
+	LED3_0;
+	LED1_0; 
+	
 	Read_Config();
+	if((lora_config_otaa_get() == LORA_ENABLE ? 1 : 0))
+	{
+  printf_joinmessage();
+	}	
+	
+	if(Positioning_time==0)
+	{
+		Positioning_time=150;
+		LON =	1;
+		MD=1;
+		set_sgm=1;
+	  Alarm_TX_DUTYCYCLE=60000;	
+	  Keep_TX_DUTYCYCLE=21600000;					
+	}
+
   LORA_RequestClass( LORAWAN_DEFAULT_CLASS );
+	
+	start_time=HW_RTC_GetTimerValue();	
 	
 	#if defined(LoRa_Sensor_Node) /*LSN50 Preprocessor compile swicth:hw_conf.h*/
 	LoraStartTx( TX_ON_TIMER);
+	time(TX_ON_TIMER);
   lora_state_GPS_Send();
-	s_gm = 1;	
+
 	start = 0;
 	gps.flag = 1;
+	is_lora_joined = 1;
 	#endif
 	
 	#if defined(AT_Data_Send)     /*LoRa ST Module*/
@@ -401,14 +462,15 @@ static void Send( void )
 	{
 
 		LP = 1;
-		PRINTF("\n\rAD_code3=%d  ", AD_code3);
+		PRINTF("\n\rBattery voltage too low\r\n");
 	}
 	else
 	{
 		LP = 0;
 	}
 	  MPU_Write_Byte(MPU9250_ADDR,0x6B,0X00);//唤醒
-    MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X00);  	//加速度与陀螺仪都工作
+	  MPU_Init();
+//    MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X00);  	//加速度与陀螺仪都工作
 
 		for(int H=0; H<10; H++)
 		{
@@ -482,34 +544,41 @@ static void Send( void )
    gps_latitude = gps.latitude;
 	 gps_longitude = gps.longitude;
 	 gps_state_on();
-	 PRINTF("\n\rRoll=%d  ",(int)(Roll1*100));
-	 PRINTF("Pitch=%d\n\r",(int)(Pitch1*100));
-	 PRINTF("%s: %.4f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
-	 PRINTF("%s: %.4f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
+	 PRINTF("\n\rRoll=%0.2f  ",((int)(Roll1*100))/100.0);
+	 PRINTF("Pitch=%0.2f\n\r",((int)(Pitch1*100))/100.0);
+//	 PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
+//	 PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
    
 	 if(gps.latNS != 'N')
 	 {
-	   latitude = gps_latitude*10000;
-	   latitude = (~latitude)+1 ; 		 
+	   latitude = gps_latitude*1000000;
+	   latitude = (~latitude) ;
+     gps_latitude = (float)(latitude)/1000000;	 
+     PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);		 
 	 }
 	 else
 	 {
-		latitude = gps_latitude*10000;	 
+		latitude = gps_latitude*1000000;
+    PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);		 
 	 }
 	 if(gps.lgtEW != 'E')
 	 {
-	   longitude = gps_longitude*10000;	 
-	   longitude = (~longitude)+1 ; 	 
+	   longitude = gps_longitude*1000000;	 
+	   longitude = (~longitude) ;
+		 gps_longitude = (float)(longitude)/1000000;
+     PRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);		 
 	 }
 	 else
 	 {
-		 longitude = gps_longitude*10000; 	 
+		 longitude = gps_longitude*1000000; 	
+     PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);		 
 	 }
    gps.latitude = 0;
    gps.longitude = 0;	
    start = 1;		
-	}
-
+	}	
+  FLAG = (int)(MD<<6 | LON<<5)& 0xFF;
+//	PRINTF("\n\rFLAG=%d  ",FLAG);
 	AppData.Port = LORAWAN_APP_PORT;
 	if(lora_getGPSState() == STATE_GPS_OFF)
 			{
@@ -519,57 +588,67 @@ static void Send( void )
 				AppData.Buff[i++] = 0x00;
 				AppData.Buff[i++] = 0x00;	
 				AppData.Buff[i++] = 0x00;
+				AppData.Buff[i++] = 0x00;	
+				AppData.Buff[i++] = 0x00;				
 			}
 		 else if(lora_getGPSState() == STATE_GPS_NO)
 		 {
-				AppData.Buff[i++] = 0x0F;
 				AppData.Buff[i++] = 0xFF;
 				AppData.Buff[i++] = 0xFF;
-				AppData.Buff[i++] = 0x0F;
+				AppData.Buff[i++] = 0xFF;
+				AppData.Buff[i++] = 0xFF;
 				AppData.Buff[i++] = 0xFF;	
-				AppData.Buff[i++] = 0xFF;	 
+				AppData.Buff[i++] = 0xFF;	
+				AppData.Buff[i++] = 0xFF;	
+				AppData.Buff[i++] = 0xFF;				 
 		 }
 		else
 		{
 
-		   AppData.Buff[i++] =(int)latitude>>16& 0xFF;
-			 AppData.Buff[i++] =(int)latitude>>8& 0xFF;
-			 AppData.Buff[i++] =(int)latitude& 0xFF;
-			 AppData.Buff[i++] =(int)longitude>>16& 0xFF;
-			 AppData.Buff[i++] =(int)longitude>>8& 0xFF;
-			 AppData.Buff[i++] =(int)longitude& 0xFF;
+
+			  AppData.Buff[i++] =(int)latitude>>24& 0xFF;
+			  AppData.Buff[i++] =(int)latitude>>16& 0xFF;
+			  AppData.Buff[i++] =(int)latitude>>8& 0xFF;
+			  AppData.Buff[i++] =(int)latitude& 0xFF;
+				AppData.Buff[i++] =(int)longitude>>24& 0xFF;
+			  AppData.Buff[i++] =(int)longitude>>16& 0xFF;
+			  AppData.Buff[i++] =(int)longitude>>8& 0xFF;
+			  AppData.Buff[i++] =(int)longitude& 0xFF;		 
 		}
-   if(set_sgm == 0)
+   if(set_sgm == 1)
 		{
 
 			if(ALARM == 1)
 			 {
-					AppData.Buff[i++] =(int)(sensor_data.oil)>>8 |0x40;      //oil float
-					AppData.Buff[i++] =(int)sensor_data.oil;					
+					AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8 |0x40;      //oil float
+					AppData.Buff[i++] =(int)sensor_data.bat_mv;					
+				 
 			 }
 			else
 			 {
-					AppData.Buff[i++] =(int)(sensor_data.oil)>>8;       //oil float
-					AppData.Buff[i++] =(int)sensor_data.oil;
+					AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8;       //oil float
+					AppData.Buff[i++] =(int)sensor_data.bat_mv;
 			 }
-					AppData.Buff[i++] =(int)(Roll1*100)>>8;       //Roll
-					AppData.Buff[i++] =(int)(Roll1*100);
-					AppData.Buff[i++] =(int)(Pitch1*100)>>8;       //Pitch
-					AppData.Buff[i++] =(int)(Pitch1*100);
+			 AppData.Buff[i++] =(int)FLAG;
 		}
-	if(set_sgm == 1)
+	else if(set_sgm == 0)
 		{
 		  if(ALARM == 1)
 			 {
-				 AppData.Buff[i++] =(int)(sensor_data.oil)>>8 |0x40;      //oil float
-				 AppData.Buff[i++] =(int)sensor_data.oil;
+				 AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8 |0x40;      //oil float
+				 AppData.Buff[i++] =(int)sensor_data.bat_mv;
 			 }
 			 else
 			 {
-				AppData.Buff[i++] =(int)(sensor_data.oil)>>8;       //oil float
-				AppData.Buff[i++] =(int)sensor_data.oil;
+				AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8;       //oil float
+				AppData.Buff[i++] =(int)sensor_data.bat_mv;
 			 }
-		}			
+			 AppData.Buff[i++] =(int)FLAG;
+			 AppData.Buff[i++] =(int)(Roll1*100)>>8;       //Roll
+			 AppData.Buff[i++] =(int)(Roll1*100);
+			 AppData.Buff[i++] =(int)(Pitch1*100)>>8;       //Pitch
+			 AppData.Buff[i++] =(int)(Pitch1*100);
+		}		
 	if(start == 1 )
 	 {
 	 gps.flag = 1;
@@ -604,21 +683,24 @@ static void LORA_RxData( lora_AppData_t *AppData )
 					{
 					  ServerSetTDC=( AppData->Buff[1]<<16 | AppData->Buff[2]<<8 | AppData->Buff[3] );//S
 					
-						if(ServerSetTDC<5)
+						if(ServerSetTDC<6)
 						{
-							PRINTF("TDC setting must be more than 4S\n\r");
+							PRINTF("TDC setting must be more than 6S\n\r");
+							Server_TX_DUTYCYCLE=6000;
 						}
 						else
 						{
 					    TDC_flag=1;
 							Server_TX_DUTYCYCLE=ServerSetTDC*1000;
-							PRINTF("ServerSetTDC: %02x\n\r",ServerSetTDC);
-							PRINTF("Server_TX_DUTYCYCLE: %02d\n\r",Server_TX_DUTYCYCLE);
+							PRINTF("ServerSetTDC: %d\n\r",ServerSetTDC);
 						}
+						if(LON == 1)
+						{
 							BSP_sensor_Init();
-							LED3_1;
+							LED3_1;						
 		          HAL_Delay(1000);	
 		          LED3_0;
+						}	
 					}
 					break;
 				}
@@ -629,15 +711,19 @@ static void LORA_RxData( lora_AppData_t *AppData )
 					{
 						if(AppData->Buff[1]==0x01)
 						{
+							 start_time=HW_RTC_GetTimerValue();		
 							 Alarm_times = 60;
 							 Alarm_times1 = 60;
                GPS_ALARM = 0;
-							 ALARM = 0;
-							 BSP_sensor_Init();
-						   LED1_1;
-						   HAL_Delay(1000);	
-						   LED1_0;
-							 PRINTF("Alarm_times\n\r");
+							 ALARM = 0;									
+							 if(LON == 1)
+							 {	 
+							  BSP_sensor_Init();									 
+						    LED1_1;							 
+						    HAL_Delay(1000);	
+						    LED1_0;
+							 }	
+							 PPRINTF("Exit Alarm\r\n");
 						}
 					}
 					break;
@@ -689,57 +775,75 @@ static void LORA_RxData( lora_AppData_t *AppData )
 			
 			case 5:
 			{
-				if( AppData->BuffSize == 2 )
-				{
-					if(AppData->Buff[1]==0x01)
+				if( AppData->BuffSize == 4 )
 					{
-						basic_flag=1;//原始值
-						PRINTF("basic_flag=1\n\r");
-					}
-					else if(AppData->Buff[1]==0x02)
-					{
-						basic_flag=2;//基准变化值
-						PRINTF("basic_flag=2\n\r");
-					}
-				}
-				break;
+					  if((AppData->Buff[1]==0x00)&&(AppData->Buff[2]==0x00)&&(AppData->Buff[3]==0x01))
+					  {
+							lora_config_reqack_set(LORAWAN_CONFIRMED_MSG);
+							Store_Config();
+					  }
+						else if((AppData->Buff[1]==0x00)&&(AppData->Buff[2]==0x00)&&(AppData->Buff[3]==0x00))
+						{
+							lora_config_reqack_set(LORAWAN_UNCONFIRMED_MSG);
+							Store_Config();
+						}
+				  }
+					break;
 			}
 				
 			case 6:
 			{
-				if( AppData->BuffSize == 2 )
+				if(AppData->BuffSize == 2 )
 				{
-					if(AppData->Buff[1]==0x01)
-					{
-//							 exti_de=0;GPIO_EXTI_IoInit();
-						PRINTF("EXTI_IoInit()\n\r");
-						
-					}
-					else if(AppData->Buff[1]==0x02)
-					{
-//								exti_de=1;GPIO_EXTI_IoDeInit();exti_flag=0;
-						 PRINTF("GPIO_EXTI_IoDeInit()\n\r");
-					}
+					CHE = AppData->Buff[1];
+					customize_set8channel_set(CHE);
+					PRINTF("CHE: %02x\n\r",CHE);
+					Store_Config();
 				}
 				break;
-			}			
+			}	
+			case 7:
+			{
+				if(AppData->BuffSize == 4 )
+				{
+					if(AppData->Buff[1]==0x03)
+					{
+					MD = AppData->Buff[1];
+					Threshold = AppData->Buff[2]; 
+					Freq = AppData->Buff[3]; 
+					PRINTF("MD: %02x,%02x,%02x\n\r",MD,Threshold,Freq);
+					}
+					else
+					{
+					MD = AppData->Buff[1];	
+					PRINTF("MD: %02x\n\r",MD);						
+					}
+					if(AppData->Buff[1]!=0x00)
+					{
+						start_time=HW_RTC_GetTimerValue();							
+					}
+					md_flags=1;
+					Store_Config();
+				}				
+				break;
+			}				
 				default:
 					break;
 		}
 		if(TDC_flag==1)
 		{
-			Store_Config();
-			TimerInit( &TxTimer, OnTxTimerEvent );
-			TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE); 
-			TimerStart( &TxTimer);
-			TDC_flag=0;
-			PRINTF("Store_Config()\n\r");
+			Store_Config();	
+			TDC_flag=0;				
 		}
 }
 
 #if defined(LoRa_Sensor_Node)
 static void OnTxTimerEvent( void )
 {
+	
+	gps.flag = 1;
+  gps.latitude = 0;
+  gps.longitude = 0;	
 	if(lora_getState() != STATE_GPS_SEND )
 	 { 	
 		Send( );			 
@@ -748,6 +852,7 @@ static void OnTxTimerEvent( void )
 	
   /*Wait for next tx slot*/
   TimerStart( &TxTimer);
+	
 }
 
 static void LoraStartTx(TxEventType_t EventType)
@@ -760,8 +865,58 @@ static void LoraStartTx(TxEventType_t EventType)
 		lora_state_GPS_Send();
 		gps.flag = 1;
     gps.latitude = 0;
-    gps.longitude = 0;			
+    gps.longitude = 0;		
     OnTxTimerEvent();
+  }
+}
+
+static void timing(void)
+{
+	uint32_t temp_time=0;
+	if(MD!=0)
+	{
+		if((motion_flags==0)&&(ALARM ==0))	
+		{
+			temp_time=HW_RTC_GetTimerValue();
+//			PPRINTF("temp_time is %d\r\n",temp_time);
+					if(temp_time<start_time)
+					{
+						start_time=0;
+					}
+	
+					if(mpuint_flags==1)
+					{
+						start_time=temp_time;
+						mpuint_flags=0;		
+					}	
+					else if(temp_time-start_time>=300000)
+					{
+						start_time=temp_time;
+						PPRINTF("Enter static mode\r\n");
+						TimerInit( &TxTimer, OnTxTimerEvent );
+						APP_TX_DUTYCYCLE=Keep_TX_DUTYCYCLE;		
+						TimerSetValue( &TxTimer, APP_TX_DUTYCYCLE);
+						/*Wait for next tx slot*/
+						TimerStart( &TxTimer);
+						motion_flags=1;	
+					}
+		}
+	}
+	TimerSetValue( &TxTimer2,  10000);
+	
+  /*Wait for next tx slot*/
+  TimerStart( &TxTimer2);	
+
+}
+
+static void time(TxEventType_t EventType)
+{
+  if (EventType == TX_ON_TIMER)
+  {
+    /* send everytime timer elapses */
+    TimerInit( &TxTimer2, timing );
+    TimerSetValue( &TxTimer2,  10000); 
+    timing();
   }
 }
 #endif
@@ -788,88 +943,58 @@ void lora_send(void)
 		  gps.flag = 1;
 			start = 0;
 			GPS_POWER_OFF();
-			BSP_sensor_Init();
-			LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-			if(a == 0)
-			{
-		   LED1_1;		
-		   HAL_Delay(500);	
-		   LED1_0;
-			 HAL_Delay(500);	
-			 start = 0;
-			 a ++;
-			}
-			a ++;
-			if( a == 10 )
-			{
-				a = 0;
-				
-			} 		
+			LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );		
 			break;
 		}
 		case  STATE_GPS_SEND:
-		{
-	
-			if(gps.latitude > 0 && gps.longitude > 0)		
+		{	
+
+			if(gps.GSA_mode2 == 3)		
   		{
-				SendData = 1;
+				if(gps.latitude > 0 && gps.longitude > 0)
+				{
+				  SendData = 1;
+				}
 			}	
+							
       if(SendData == 1)
 			{				
 			 if(GPS_ALARM == 0)
 				{
-					send_data();
 				  gps_state_on();
+					gps_latitude = gps.latitude;
+					gps_longitude = gps.longitude;							
+					send_data();						
 			    a = 1;
 					GPS_ALARM = 0;
-          SendData = 0;					
+          SendData = 0;	
+					if(LON == 1)
+					{
+					 LED1_1; 
+					}							
+					 HAL_Delay(500);
+					 LED1_0;
+				   HAL_Delay(500);				
 				}
 				if(GPS_ALARM == 1)
 				{
-				 if(Alarm_LED == 0)
-					{
-						gps_latitude = gps.latitude;
-						gps_longitude = gps.longitude;
-						gps.flag = 1;
-						gps.GSA_mode2 = 0;
-						start = 1;	
-						ALARM = 1;						
-						Alarm_times1 = 0;
-						Alarm_times = 60;
-						Send( );
-						GPS_POWER_OFF();
-						BSP_sensor_Init();
-					}
-					if( Alarm_LED < 60)
-					 {	 	 
-						LED3_1; 
-						HAL_Delay(500);
-						LED3_0;
-						HAL_Delay(500);
-						Alarm_LED ++; 
-						GPS_ALARM = 1;
-						PRINTF("Alarm_LED:%d\n\r",Alarm_LED);	
-					 }
-					 if( Alarm_LED == 60)
-					 {
-						Alarm_times = 0; 
-						GPS_ALARM = 1;
-					  Alarm_LED ++;						 
-					 }
 				 if(Alarm_times < 60)
-				 {
-					 send_ALARM_data();	
+				 {			 
 					 gps_state_on();
+					 gps_latitude = gps.latitude;
+					 gps_longitude = gps.longitude;						 
+					 send_ALARM_data();							 
            a = 100;		
            GPS_ALARM = 1;
            SendData = 0;						 
-           PRINTF("seng data \n\r");					 
+           PRINTF("send data \n\r");					 
 				 }
 				 if(Alarm_times1 == 60)
 				 {
+					 start_time=HW_RTC_GetTimerValue();		
 					 lora_state_GPS_Send();
-					 start = 0;	
-					 ALARM = 0;
+					 start = 0;						 
+					 ALARM = 0;					 
 					 Alarm_LED = 0;
            GPS_ALARM = 0;						 
 					 PRINTF("led\n\r");			 
@@ -880,11 +1005,14 @@ void lora_send(void)
 			
 					 /*Wait for next tx slot*/
 					 TimerStart( &TxTimer);
-					 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-					 BSP_sensor_Init();
-					 LED1_1;
-					 HAL_Delay(1000);	
-					 LED1_0;
+					 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );				 
+					 if(LON == 1)
+						 {
+					    BSP_sensor_Init();								 
+					    LED1_1;
+						 }							 
+					    HAL_Delay(1000);	
+					    LED1_0;
 					 DISABLE_IRQ( );
 				/*
 				 * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
@@ -892,23 +1020,73 @@ void lora_send(void)
 				 * don't go in low power mode if we just received a char
 				 */
 #ifndef LOW_POWER_DISABLE
-		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
 		LPM_EnterLowPower();
 #endif
 					 ENABLE_IRQ();			 
 				 }	
 				}
-		  }
+		  }	
+			
 			if(LP == 0)
 			{
 				LPM_SetOffMode(LPM_APPLI_Id , LPM_Enable );
-				BSP_sensor_Init();
+				BSP_sensor_Init();		
+				if(GS == 1)
+				{			
+					ALARM = 1;	
+					gps_state_off();				
+					start = 1;
+					gps.latitude = 0;
+					gps.longitude = 0;						
+			    APP_TX_DUTYCYCLE = Server_TX_DUTYCYCLE;
+			    TimerInit( &TxTimer, OnTxTimerEvent );
+	        TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
+	        Send( );	
+			    TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
+          /*Wait for next tx slot*/
+          TimerStart( &TxTimer);
+					GS = 0;
+				}
+				
+					if(GPS_ALARM == 1)
+					{
+						if(Alarm_LED == 0)
+					{
+						gps.flag = 1;
+						gps.GSA_mode2 = 0;
+						start = 1;	
+						ALARM = 1;						
+						Alarm_times1 = 0;
+						Alarm_times = 60;
+						GPS_POWER_OFF();
+						BSP_sensor_Init();
+						PRINTF("\n\r");	
+					}
+					if( Alarm_LED < 60)
+					 { 
+						LED3_1; 
+						HAL_Delay(500);
+						LED3_0;
+					  HAL_Delay(500);
+						Alarm_LED ++; 
+						GPS_ALARM = 1;
+						PRINTF("Alarm_LED:%d\n\r",Alarm_LED);	
+					 }
+					 if( Alarm_LED == 60)
+					 {
+						Alarm_times = 0; 
+						GPS_ALARM = 1;					 
+					 }
+				  }
+					
 			  POWER_ON();
 			  GPS_INPUT();
 				LP = 0;
 				LED0_0;
 			  Start_times ++;
 			}
+					
 			if(LP == 1)
       {
 				start = 1;
@@ -923,88 +1101,85 @@ void lora_send(void)
 			  LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
 			  PRINTF("Server_TX_DUTYCYCLE11: %02d\n\r",APP_TX_DUTYCYCLE);		
         PRINTF("LP == 1\n\r");				
-//				gps_state_no();
 		    lora_state_Led();
 				a = 1;
 
-			}
-				if(Start_times ==2500)
+			}	
+			
+				if(Start_times == TIMES)
 				{
 					End_times ++;
 					Start_times =0;
-					LED0_1;
-					HAL_Delay(100);
+					gps_time ++ ;
+				  if(LON == 1)
+				   {
+					  LED0_1;
+				   }
+					TIMES = 10000;
+				  if( MD == 0)
+				  {
+					  MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep         
+						APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
+						TimerInit( &TxTimer, OnTxTimerEvent );
+						TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
+						/*Wait for next tx slot*/
+						TimerStart( &TxTimer);
+				  }
+					HAL_Delay(200);
 				}
-        if(End_times == 30 || End_times == 60 || End_times ==90 || End_times ==120 )
+				if(End_times < Positioning_time)
 				{
-					PRINTF("End_times:%02d \n\r",End_times); 
-					PRINTF("Positioning_time:%02d \n\r",Positioning_time);
-					End_times ++;
-				}
-       			
+					if(gps_time == 30 )
+					{
+						PRINTF("\r\n");
+						PRINTF("End_times:%02d \n\r",End_times); 
+						PRINTF("Positioning_time:%02d \n\r",Positioning_time);
+						gps_time = 0;
+					}
+       	}	
+				
 			  if(End_times >=Positioning_time)
 				{
-					if(lora_getState() == STATE_GPS_SEND)
+				  send_fail=1;	
+					if(GPS_ALARM == 0)
 					{
+						 LED3_0;
+						 LED1_0;
+						 LED0_0;
 						 gps_state_off();	
-             a = 100;							
+             a = 100;						
 						 send_data();
 						 PRINTF("GPS NO FIX\n\r");
-						 a = 100;	
-						 GPS_ALARM = 0;						
-						 LED3_1; 
-						 HAL_Delay(500);
-						 LED3_0;
-						 HAL_Delay(500);
+						 GPS_ALARM = 0;	
+             if(LON == 1)
+             {									 
+						   LED3_1; 							 
+						   HAL_Delay(500);
+						   LED3_0;
+						   HAL_Delay(500);
+							 LED3_1; 							 
+						   HAL_Delay(500);
+						   LED3_0;
+						   HAL_Delay(500);
+						 }	 
 					}
 					if(GPS_ALARM == 1)
 					{
-					 if(Alarm_LED == 0)
-						{
-							gps_state_off();	
-							gps_latitude = gps.latitude;
-							gps_longitude = gps.longitude;
-							gps.flag = 1;
-							gps.GSA_mode2 = 0;
-							start = 1;	
-							ALARM = 1;	
-							Alarm_times1 = 0;
-							Alarm_times = 60;
-							Send( );
-							GPS_POWER_OFF();
-							BSP_sensor_Init();
-							LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );		
-						}
-					if( Alarm_LED < 60)
-					 {	 	 
-						LED3_1; 
-						HAL_Delay(500);
-						LED3_0;
-						HAL_Delay(500);
-						Alarm_LED ++; 
-						GPS_ALARM = 1;
-//						Alarm_times = 0;
-						PRINTF("Alarm_LED:%d\n\r",Alarm_LED);	
-					 }
-					 if( Alarm_LED == 60)
-					 {
-						Alarm_times = 0; 
-						GPS_ALARM = 1;
-					  Alarm_LED ++;						 
-					 }
 					 if(Alarm_times < 60)
 					 {
+						 LED3_0;
+						 LED1_0;
+						 LED0_0;
 						 gps_state_off();	
 						 send_ALARM_data();
 						 GPS_ALARM = 1;
-						 a = 100;					
-						 LED3_1; 
-						 HAL_Delay(500);
-						 LED3_0;
-						 HAL_Delay(500);
+						 a = 100;	
+						 SendData = 0;
+					   PRINTF("GPS NO FIX\n\r");							 
 					 }
 					 if(Alarm_times1 == 60)
 					 {
+						 start_time=HW_RTC_GetTimerValue();		
 						 lora_state_GPS_Send();
 						 start = 0;	
 						 ALARM = 0;
@@ -1018,11 +1193,14 @@ void lora_send(void)
 				
 						 /*Wait for next tx slot*/
 						 TimerStart( &TxTimer);
-						 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-						 BSP_sensor_Init();
-						 LED0_1;
-						 HAL_Delay(1000);	
-						 LED0_0;
+						 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );					 
+						 if(LON == 1)
+						 {
+							BSP_sensor_Init();								 
+						  LED1_1;
+						 }							 
+						  HAL_Delay(1000);	
+						  LED1_0;
 						 DISABLE_IRQ( );
 					/*
 					 * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
@@ -1030,12 +1208,13 @@ void lora_send(void)
 					 * don't go in low power mode if we just received a char
 					 */
 #ifndef LOW_POWER_DISABLE
-		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
 		LPM_EnterLowPower();
 #endif
 						 ENABLE_IRQ();			 
 					 }	
-					}				 
+					}	
+      	 send_fail=0;							
 			 }
 		 break;
 		}
@@ -1052,7 +1231,10 @@ void lora_send(void)
 void send_data(void)
 {
        start = 1;
+	     if(motion_flags==0)
+			 {
 			 APP_TX_DUTYCYCLE = Server_TX_DUTYCYCLE;
+			 }
 			 TimerInit( &TxTimer, OnTxTimerEvent );
 	     TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
 	     Send( );	
@@ -1067,8 +1249,14 @@ void send_data(void)
        LED0_0;
 			 End_times = 0 ;
 			 gps.GSA_mode2 = 0;
-			 gps_latitude = gps.latitude;
-	     gps_longitude = gps.longitude;
+			if( MD == 0)
+			 {
+					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+			 }
+			else
+			 {
+					MPU_INT_Init();
+			 }
        DISABLE_IRQ( );
     /*
      * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
@@ -1076,7 +1264,7 @@ void send_data(void)
      * don't go in low power mode if we just received a char
      */
 #ifndef LOW_POWER_DISABLE
-		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
     LPM_EnterLowPower();
 #endif
     ENABLE_IRQ();	
@@ -1084,14 +1272,11 @@ void send_data(void)
 
 void send_ALARM_data(void)
 {
-#if defined( REGION_EU868 )
-       APP_TX_DUTYCYCLE=Alarm_TX_DUTYCYCLE;
-#else
-			 APP_TX_DUTYCYCLE=Alarm_TX_DUTYCYCLE;
-#endif			
+	
+		   start = 1;		
+       APP_TX_DUTYCYCLE=Alarm_TX_DUTYCYCLE;	
        TimerInit( &TxTimer, OnTxTimerEvent );			 
-			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
-	    
+			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);		    
        Send( );	
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
        /*Wait for next tx slot*/
@@ -1101,12 +1286,22 @@ void send_ALARM_data(void)
 			 BSP_sensor_Init();
 			 End_times = 0 ;
 	     LED0_0;
-	     a = 100;	
-			 LED3_1; 
-			 HAL_Delay(1000);
-			 LED3_0; 
-//			 gps_latitude = gps.latitude;
-//	     gps_longitude = gps.longitude;	
+	     a = 100;
+       if(LON == 1)
+			 {				 
+		  	 LED3_1; 
+			 }
+			   HAL_Delay(1000);
+			   LED3_0;
+
+			if( MD == 0)
+			 {
+					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+			 }
+			else
+			 {
+					MPU_INT_Init();
+			 }		 	
        DISABLE_IRQ( );
     /*
      * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
@@ -1114,14 +1309,14 @@ void send_ALARM_data(void)
      * don't go in low power mode if we just received a char
      */
 #ifndef LOW_POWER_DISABLE
-		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
     LPM_EnterLowPower();
 #endif
     ENABLE_IRQ();	
 }
 
 /*
-*@功能：快速获得开方的倒数
+*@Features: Quickly get an open countdown
 *
 *
 */
@@ -1142,8 +1337,8 @@ float invSqrt(float number)
 
 
 /*
-*@功能：融合加速度计和磁力计进行姿态调整
-*
+*@Features: Fusion accelerometer and magnetometer for attitude adjustment
+* 
 *
 */
 void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz,float *roll,float *pitch,float *yaw)
@@ -1188,13 +1383,13 @@ void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, floa
 		my_old=my;
 		mz_old=mz;
 		
-           float norm;									//用于单位化
+           float norm;									//For unitization
            float hx, hy, hz, bx, bz;		//
            float vx, vy, vz, wx, wy, wz; 
            float ex, ey, ez;
 //					 float tmp0,tmp1,tmp2,tmp3;
  
-           // auxiliary variables to reduce number of repeated operations  辅助变量减少重复操作次数
+           // auxiliary variables to reduce number of repeated operations
            float q0q0 = q0*q0;
            float q0q1 = q0*q1;
            float q0q2 = q0*q2;
@@ -1206,7 +1401,7 @@ void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, floa
            float q2q3 = q2*q3;
            float q3q3 = q3*q3;
           
-           // normalise the measurements  对加速度计和磁力计数据进行规范化
+           // normalise the measurements  
            norm = invSqrt(ax*ax + ay*ay + az*az);
            ax = ax * norm;
            ay = ay * norm;
@@ -1216,46 +1411,45 @@ void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, floa
            my = my * norm;
            mz = mz * norm;
           
-           // compute reference direction of magnetic field  计算磁场的参考方向
-					 //hx,hy,hz是mx,my,mz在参考坐标系的表示
+           // compute reference direction of magnetic field 
+					 //hx,hy,hz is mx,my,mz Representation in the reference coordinate system
            hx = 2*mx*(0.50 - q2q2 - q3q3) + 2*my*(q1q2 - q0q3) + 2*mz*(q1q3 + q0q2);
            hy = 2*mx*(q1q2 + q0q3) + 2*my*(0.50 - q1q1 - q3q3) + 2*mz*(q2q3 - q0q1);
            hz = 2*mx*(q1q3 - q0q2) + 2*my*(q2q3 + q0q1) + 2*mz*(0.50 - q1q1 -q2q2);    
-						//bx,by,bz是地球磁场在参考坐标系的表示
+						//bx,by,bz Is the representation of the Earth's magnetic field in the reference coordinate system
            bx = sqrt((hx*hx) + (hy*hy));
            bz = hz;
           
-// estimated direction of gravity and magnetic field (v and w)  //估计重力和磁场的方向
-//vx,vy,vz是重力加速度在物体坐标系的表示
+// estimated direction of gravity and magnetic field (v and w) 
+//vx,vy,vz Is the representation of gravity acceleration in the object coordinate system
            vx = 2*(q1q3 - q0q2);
            vy = 2*(q0q1 + q2q3);
            vz = q0q0 - q1q1 - q2q2 + q3q3;
-					 //wx,wy,wz是地磁场在物体坐标系的表示
+					 //wx,wy,wz Is the representation of the earth's magnetic field in the object coordinate system
            wx = 2*bx*(0.5 - q2q2 - q3q3) + 2*bz*(q1q3 - q0q2);
            wy = 2*bx*(q1q2 - q0q3) + 2*bz*(q0q1 + q2q3);
            wz = 2*bx*(q0q2 + q1q3) + 2*bz*(0.5 - q1q1 - q2q2); 
           
 // error is sum ofcross product between reference direction of fields and directionmeasured by sensors 
-//ex,ey,ez是加速度计与磁力计测量出的方向与实际重力加速度与地磁场方向的误差，误差用叉积来表示，且加速度计与磁力计的权重是一样的
+//ex,ey,ezIt is the error between the acceleration and the measured direction of the magnetometer and the actual gravity acceleration and the geomagnetic direction.
+// The error is expressed by the cross product, and the weight of the accelerometer and the magnetometer are the same.
            ex = (ay*vz - az*vy) + (my*wz - mz*wy);
            ey = (az*vx - ax*vz) + (mz*wx - mx*wz);
            ez = (ax*vy - ay*vx) + (mx*wy - my*wx);
 
            // integral error scaled integral gain
-					 //积分误差
            exInt = exInt + ex*Ki*dt;
            eyInt = eyInt + ey*Ki*dt;
            ezInt = ezInt + ez*Ki*dt;
 					// printf("exInt=%0.1f eyInt=%0.1f ezInt=%0.1f ",exInt,eyInt,ezInt);
            // adjusted gyroscope measurements
-					 //PI调节陀螺仪数据
            gx = gx + Kp*ex + exInt;
            gy = gy + Kp*ey + eyInt;
            gz = gz + Kp*ez + ezInt;
 					 //printf("gx=%0.1f gy=%0.1f gz=%0.1f",gx,gy,gz);
           
            // integrate quaernion rate aafnd normalaizle
-					 //欧拉法解微分方程
+			
 //           tmp0 = q0 + (-q1*gx - q2*gy - q3*gz)*halfT;
 //           tmp1 = q1 + ( q0*gx + q2*gz - q3*gy)*halfT;
 //           tmp2 = q2 + ( q0*gy - q1*gz + q3*gx)*halfT;
@@ -1265,7 +1459,7 @@ void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, floa
 //					 q2=tmp2;
 //					 q3=tmp3;
 					 //printf("q0=%0.1f q1=%0.1f q2=%0.1f q3=%0.1f",q0,q1,q2,q3);
-////RUNGE_KUTTA 法解微分方程
+////RUNGE_KUTTA Solving differential equation
 					  k10=0.5 * (-gx*q1 - gy*q2 - gz*q3);
 						k11=0.5 * ( gx*q0 + gz*q2 - gy*q3);
 						k12=0.5 * ( gy*q0 - gz*q1 + gx*q3);
@@ -1304,7 +1498,7 @@ void AHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, floa
 }
 
 /*
-*@功能：计算水平方向转的圈数
+*@Features: Calculate the number of turns in the horizontal direction
 *
 *
 */
@@ -1318,7 +1512,7 @@ void CountTurns(float *newdata,float *olddata,short *turns)
 }
 
 /*
-*@功能：计算偏航角
+*@Features: Calculate the yaw angle
 *
 *
 */
@@ -1328,7 +1522,7 @@ void CalYaw(float *yaw,short *turns)
 }
 
 /*
-*@功能：补偿欧拉角偏移，主要补偿yaw角
+*@Features: Compensate for Euler angle offset, mainly to compensate for yaw angle
 *
 *
 */

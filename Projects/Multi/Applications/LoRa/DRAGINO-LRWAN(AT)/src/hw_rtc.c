@@ -61,7 +61,7 @@ Maintainer: Miguel Luis and Gregory Cristian
 /* Includes ------------------------------------------------------------------*/
 #include "hw.h"
 #include "low_power_manager.h"
-
+#include "lora.h"
 /* Private typedef -----------------------------------------------------------*/
 typedef struct
 {
@@ -72,6 +72,7 @@ typedef struct
   RTC_DateTypeDef RTC_Calndr_Date; /* Reference date in calendar format */
   
 } RtcTimerContext_t;
+
 
 /* Private define ------------------------------------------------------------*/
 
@@ -575,7 +576,6 @@ static void HW_RTC_StartWakeUpAlarm( uint32_t timeoutValue )
   DBG_PRINTF("it's %d:%d:%d:%d ", RTC_TimeStruct.Hours, RTC_TimeStruct.Minutes, RTC_TimeStruct.Seconds, ((PREDIV_S - RTC_TimeStruct.SubSeconds)*1000)>>N_PREDIV_S);
   DBG_PRINTF("WU@ %d:%d:%d:%d\n\r", rtcAlarmHours, rtcAlarmMinutes, rtcAlarmSeconds, (rtcAlarmSubSeconds*1000)>>N_PREDIV_S );
 }
-
 
 /*!
  * @brief get current time from calendar in ticks

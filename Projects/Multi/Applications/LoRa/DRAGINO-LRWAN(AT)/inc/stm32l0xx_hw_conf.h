@@ -210,12 +210,12 @@ Maintainer: Miguel Luis and Gregory Cristian
 #define LED3_1             HAL_GPIO_WritePin(LED3_PORT ,LED3_PIN,GPIO_PIN_SET)
 
 /* ---------------------------  OIL FLOAT definition -------------------------------*/
-#define OIL_CLK_ENABLE()   __HAL_RCC_GPIOA_CLK_ENABLE()
-#define OIL_CONTROL_PORT          GPIOA	 
-#define OIL_CONTROL_PIN           GPIO_PIN_2
-#define Oil_LEVEL_PORT            GPIOA
-#define Oil_LEVEL_PIN             GPIO_PIN_0 
-#define ADC_Channel_Oil           ADC_CHANNEL_0
+#define battery_CLK_ENABLE()   __HAL_RCC_GPIOA_CLK_ENABLE()
+#define battery_CONTROL_PORT          GPIOA	 
+#define battery_CONTROL_PIN           GPIO_PIN_2
+#define battery_LEVEL_PORT            GPIOA
+#define battery_LEVEL_PIN             GPIO_PIN_0 
+#define ADC_Channel_battery           ADC_CHANNEL_0
 #ifdef __cplusplus
 }
 #endif

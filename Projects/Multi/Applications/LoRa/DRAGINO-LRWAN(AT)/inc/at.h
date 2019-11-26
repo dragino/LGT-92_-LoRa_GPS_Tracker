@@ -120,10 +120,12 @@ typedef enum eATEerror
 #define AT_CHS        "+CHS"
 #define AT_CHE        "+CHE"
 #define AT_SGM        "+SGM"
-//#define AT_DCE        "+DCE"
-#define AT_GPST        "+GPST"
+#define AT_FTIME      "+FTIME"
 #define AT_ACE        "+ACE"
-#define AT_STD        "+STD"
+#define AT_LON        "+LON"
+#define AT_MD         "+MD"
+#define AT_KAT        "+KAT"
+#define AT_MLON       "+MLON"
 #define AT_CFG        "+CFG"
 #define AT_RX1WTO     "+RX1WTO"
 #define AT_RX2WTO     "+RX2WTO"
@@ -648,11 +650,25 @@ ATEerror_t at_sgm_set(const char *param);
 
 ATEerror_t at_sgm_get(const char *param);
 
-ATEerror_t at_gpst_set(const char *param);
+ATEerror_t at_ftime_set(const char *param);
 
-ATEerror_t at_gpst_get(const char *param);
+ATEerror_t at_ftime_get(const char *param);
 
-ATEerror_t at_STD(const char *param);
+ATEerror_t at_md_set(const char *param);
+
+ATEerror_t at_md_get(const char *param);
+
+ATEerror_t at_KAT_set(const char *param);
+
+ATEerror_t at_KAT_get(const char *param);
+	
+ATEerror_t at_lon_set(const char *param);
+
+ATEerror_t at_lon_get(const char *param);
+
+ATEerror_t at_mlon_set(const char *param);
+
+ATEerror_t at_mlon_get(const char *param);
 
 ATEerror_t at_symbtimeout1LSB_get(const char *param);
 
@@ -662,7 +678,6 @@ ATEerror_t at_symbtimeout2LSB_get(const char *param);
 
 ATEerror_t at_symbtimeout2LSB_set(const char *param);
 
-void s_tdc();
 
 #ifdef __cplusplus
 }

@@ -57,11 +57,20 @@
 #include "GPS.h"
 #include "low_power_manager.h"
 #include "version.h"
+#include "mpu9250.h"
 static uint8_t config_count=0;
 static uint8_t key_count=0;
 
 static uint32_t s_config[32]; //store config
 static uint32_t s_key[32];    //store key
+
+uint8_t mpuint_flags=0;
+
+extern uint8_t symbtime1_value;
+extern uint8_t flag1;
+
+extern uint8_t symbtime2_value;
+extern uint8_t flag2;
 
 extern uint32_t APP_TX_DUTYCYCLE;
 
@@ -69,13 +78,14 @@ extern uint32_t Server_TX_DUTYCYCLE;
 
 extern uint32_t Alarm_TX_DUTYCYCLE;
 
+
+extern uint32_t Keep_TX_DUTYCYCLE;
+
 extern uint32_t GPS_ALARM;
 
 extern uint32_t set_sgm;
 
 extern uint32_t Positioning_time;
-
-extern uint32_t s_gm;
 
 extern uint32_t s_timer;
 
@@ -83,9 +93,15 @@ extern uint8_t Alarm_times;
 
 extern uint8_t Alarm_times1;
 
-extern uint8_t Restart;
-
 extern  uint32_t Alarm_LED ;
+
+extern uint32_t LON ;
+extern uint32_t MD ;
+extern uint32_t MLON ;
+extern uint32_t Threshold ;
+extern uint32_t Freq ;
+
+extern uint32_t GS;
 
 #define HEX16(X)  X[0],X[1], X[2],X[3], X[4],X[5], X[6],X[7],X[8],X[9], X[10],X[11], X[12],X[13], X[14],X[15]
 #define HEX8(X)   X[0],X[1], X[2],X[3], X[4],X[5], X[6],X[7]
@@ -96,7 +112,6 @@ static GPSState_t GPSState = STATE_GPS_NO;
 
 static SGM_t SGM = STATE_SEND_GPS_MPU;
 
-static TimerEvent_t TxTimer;
  /**
    * Lora Configuration
    */
@@ -191,9 +206,9 @@ static lora_configuration_t lora_config =
  */
 #define LORAWAN_DUTYCYCLE_ON                        true
 
-#define USE_SEMTECH_DEFAULT_CHANNEL_LINEUP          0
+//#define USE_SEMTECH_DEFAULT_CHANNEL_LINEUP          0
 
-#if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 ) 
+//#if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 ) 
 
 #define LC4                { 867100000, 0, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
 #define LC5                { 867300000, 0, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
@@ -203,7 +218,7 @@ static lora_configuration_t lora_config =
 #define LC9                { 868800000, 0, { ( ( DR_7 << 4 ) | DR_7 ) }, 2 }
 #define LC10               { 868300000, 0, { ( ( DR_6 << 4 ) | DR_6 ) }, 1 }
 
-#endif
+//#endif
 
 #endif
 
@@ -395,10 +410,11 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
 	
 	#if defined(LoRa_Sensor_Node) || defined(AT_Data_Send)
 	
-	PRINTF("\n\rLGT-92 Device\n\r");
+	PPRINTF("\n\rLGT-92 Device\n\r");
 	
-	PRINTF("Image Version: "AT_VERSION_STRING"\n\r");
-	PRINTF("Frequency Band: ");
+	PPRINTF("Image Version: "AT_VERSION_STRING"\n\r");
+	PPRINTF("LoRaWan Stack: "AT_LoRaWan_VERSION_STRING"\n\r");	
+	PPRINTF("Frequency Band: ");
 	region_printf();
 	key_printf();
 	#endif
@@ -427,8 +443,8 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
   LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_KR920 );
 #elif defined( REGION_US915 )
   LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915 );
-#elif defined( REGION_US915_HYBRID )
-  LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915_HYBRID );
+#elif defined( REGION_RU864 )
+  LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_RU864 );
 #else
     #error "Please define a region in the compiler options."
 #endif
@@ -445,27 +461,28 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
   mibReq.Param.Class= CLASS_A;
   LoRaMacMibSetRequestConfirm( &mibReq );
 
-#if defined( REGION_EU868 )
-  LoRaMacTestSetDutyCycleOn( lora_config.duty_cycle );
+	#if defined( REGION_EU868 )
+	if(customize_config.freq1==0)
+	{
+//	#if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 )
+		LoRaMacChannelAdd( 3, ( ChannelParams_t )LC4 );
+		LoRaMacChannelAdd( 4, ( ChannelParams_t )LC5 );
+		LoRaMacChannelAdd( 5, ( ChannelParams_t )LC6 );
+		LoRaMacChannelAdd( 6, ( ChannelParams_t )LC7 );
+		LoRaMacChannelAdd( 7, ( ChannelParams_t )LC8 );
+		LoRaMacChannelAdd( 8, ( ChannelParams_t )LC9 );
+		LoRaMacChannelAdd( 9, ( ChannelParams_t )LC10 );
+   }
+				
+		mibReq.Type = MIB_RX2_DEFAULT_CHANNEL;
+		mibReq.Param.Rx2DefaultChannel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
+		LoRaMacMibSetRequestConfirm( &mibReq );
 
-#if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 )
-  LoRaMacChannelAdd( 3, ( ChannelParams_t )LC4 );
-  LoRaMacChannelAdd( 4, ( ChannelParams_t )LC5 );
-  LoRaMacChannelAdd( 5, ( ChannelParams_t )LC6 );
-  LoRaMacChannelAdd( 6, ( ChannelParams_t )LC7 );
-  LoRaMacChannelAdd( 7, ( ChannelParams_t )LC8 );
-  LoRaMacChannelAdd( 8, ( ChannelParams_t )LC9 );
-  LoRaMacChannelAdd( 9, ( ChannelParams_t )LC10 );
-
-  mibReq.Type = MIB_RX2_DEFAULT_CHANNEL;
-  mibReq.Param.Rx2DefaultChannel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
-  LoRaMacMibSetRequestConfirm( &mibReq );
-
-  mibReq.Type = MIB_RX2_CHANNEL;
-  mibReq.Param.Rx2Channel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
-  LoRaMacMibSetRequestConfirm( &mibReq );
-#endif
-#endif
+		mibReq.Type = MIB_RX2_CHANNEL;
+	  mibReq.Param.Rx2Channel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
+		LoRaMacMibSetRequestConfirm( &mibReq );
+//#endif
+	#endif
   lora_config.TxDatarate = LoRaParamInit->TxDatarate;
 	
 	  if(FLASH_read(0x8018F80)==0x00)	//page799
@@ -476,44 +493,48 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
        	customize_config.set8channel = 2;
         #endif
 				Server_TX_DUTYCYCLE=300000;
-				
+				Alarm_TX_DUTYCYCLE=60000;
+			  Keep_TX_DUTYCYCLE=21600000;				
+				Positioning_time = 150;
+        gps.flag = 1;	 
+        LON =	1;
+        MD =1;
+        set_sgm = 1;					
 				Store_Config();
 				Read_Config();
 				FLASH_program_on_addr(0x8018F80,0x11);
-        s_gm = 0;	
         s_timer = 1;
-        Restart = 0;
-        gps.flag = 1;			
         PRINTF("Please set the parameters or reset Device to apply change\n\r");				
 			}
       else 
 			{					
 				Read_Config();
 				LORA_Join();
-				Restart = 0;
 			}
 }
 
 void region_printf(void)
 {
 #if defined( REGION_AS923 )
-  PRINTF("AS923\n\r");
+  PPRINTF("AS923\n\r");
 #elif defined( REGION_AU915 )
-  PRINTF("AU915\n\r");
+  PPRINTF("AU915\n\r");
 #elif defined( REGION_CN470 )
-  PRINTF("CN470\n\r");
+  PPRINTF("CN470\n\r");
 #elif defined( REGION_CN779 )
-  PRINTF("CN779\n\r");
+  PPRINTF("CN779\n\r");
 #elif defined( REGION_EU433 )
-  PRINTF("EU433\n\r");
+  PPRINTF("EU433\n\r");
 #elif defined( REGION_IN865 )
-  PRINTF("IN865\n\r");
+  PPRINTF("IN865\n\r");
 #elif defined( REGION_EU868 )
-  PRINTF("EU868\n\r");
+  PPRINTF("EU868\n\r");
 #elif defined( REGION_KR920 )
-  PRINTF("KR920\n\r");
+  PPRINTF("KR920\n\r");
 #elif defined( REGION_US915 )
-  PRINTF("US915\n\r");
+  PPRINTF("US915\n\r");
+#elif defined( REGION_RU864 )
+  PPRINTF("RU864\n\r");	
 #else
     #error "Please define a region in the compiler options."
 #endif
@@ -1032,7 +1053,22 @@ void Store_Config(void)
 	
 	s_config[config_count++]=Positioning_time;
 	
-//	s_config[config_count++]=Alarm_TX_DUTYCYCLE;
+	s_config[config_count++]=LON;
+	
+	s_config[config_count++]=MD;
+	
+	s_config[config_count++]=MLON;
+	
+	s_config[config_count++]=Threshold;
+	
+	s_config[config_count++]=Freq;	
+
+	s_config[config_count++]=Alarm_TX_DUTYCYCLE;
+
+	s_config[config_count++]=Keep_TX_DUTYCYCLE;
+	
+	s_config[config_count++]=(symbtime1_value<<24)|(flag1<<16)|(symbtime2_value<<8)| flag2;	
+
 	
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);//Page800 
 	FLASH_program(FLASH_USER_START_ADDR_CONFIG,s_config,config_count);//store config
@@ -1042,7 +1078,7 @@ void Store_Config(void)
 
 void Read_Config(void)
 {
-	uint32_t star_address=0,r_config[15],r_key[17];
+	uint32_t star_address=0,r_config[23],r_key[17];
 	
 	star_address=FLASH_USER_START_ADDR_KEY;
 	/* read key*/
@@ -1060,7 +1096,7 @@ void Read_Config(void)
 	read_data(8 ,lora_config.AppEui,r_key[15],r_key[16],0,0);
 	
 	star_address=FLASH_USER_START_ADDR_CONFIG;
-	for(int i=0;i<15;i++)
+	for(int i=0;i<23;i++)
 	{
 	  r_config[i]=FLASH_read(star_address);
 		star_address+=4;
@@ -1143,7 +1179,28 @@ void Read_Config(void)
 	
 	Positioning_time = r_config[14];
 	
-//	Alarm_TX_DUTYCYCLE = r_config[14];
+	LON = r_config[15];
+	
+	MD = r_config[16];
+	
+	MLON = r_config[17]; 
+
+  Threshold = r_config[18];
+	
+	Freq = r_config[19];
+
+	Alarm_TX_DUTYCYCLE = r_config[20];
+
+	Keep_TX_DUTYCYCLE = r_config[21];
+	
+	symbtime1_value=(r_config[22]>>24)&0xFF;
+	
+	flag1=(r_config[22]>>16)&0xFF;
+	
+	symbtime2_value=(r_config[22]>>8)&0xFF;
+	
+	flag2=r_config[22]&0xFF;
+	
 }
 
 State_t lora_getState( void )
@@ -1171,22 +1228,33 @@ void lora_state_INT(void)
 	{
 		PRINTF("Enter\n\r");
 		GPS_ALARM =1;
+		GS = 1;
 		Alarm_LED = 0;
 		State = STATE_GPS_SEND;
 		APP_TX_DUTYCYCLE = 0;
-//		TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
-//	
-//       /*Wait for next tx slot*/
-//    TimerStart( &TxTimer);
 		LPM_SetOffMode(LPM_APPLI_Id , LPM_Enable );
 	 	
 	}
-//	else
-//	{
-//		PRINTF("Ë¯Ãß:%d\n\r",in1);
-//		LPM_SetOffMode(LPM_APPLI_Id , LPM_Disable );
-//		
-//	}
+}
+void MPU9250_INT(void)
+{
+	int in2 = 0;
+	in2=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_12);
+  if(in2 == 1)
+	 {		 
+		PPRINTF("In Motion\n\r ");
+		mpuint_flags=1;		 
+		if(MLON == 1)
+		 {			
+			BSP_sensor_Init();		 
+			LED3_1; 
+			HAL_Delay(500);
+			LED3_0;
+			HAL_Delay(500);
+		 }	 
+	 }
+	 MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+	 MPU_INT_Init();
 }
 void lora_state_Led(void)
 {
@@ -1236,28 +1304,6 @@ void LORA_GPS_MPU(void)
 {
 	SGM =  STATE_SEND_GPS_MPU;
 }
-/* Dummy data sent periodically to let the tester respond with start test command*/
-//static TimerEvent_t TxcertifTimer;
-
-//void OnCertifTimer( void)
-//{
-//  uint8_t Dummy[1]= {1};
-//  lora_AppData_t AppData;
-//  AppData.Buff=Dummy;
-//  AppData.BuffSize=sizeof(Dummy);
-//  AppData.Port = 224;
-
-//  LORA_send( &AppData, LORAWAN_UNCONFIRMED_MSG);
-//}
-
-//void lora_wan_certif( void )
-//{
-//  LORA_Join( );
-//  TimerInit( &TxcertifTimer,  OnCertifTimer); /* 5s */
-//  TimerSetValue( &TxcertifTimer,  5000); /* 5s */
-//  TimerStart( &TxcertifTimer );
-
-//}
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 
