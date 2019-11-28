@@ -494,7 +494,7 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
         #endif
 				Server_TX_DUTYCYCLE=300000;
 				Alarm_TX_DUTYCYCLE=60000;
-			  Keep_TX_DUTYCYCLE=21600000;				
+			  Keep_TX_DUTYCYCLE=3600000;				
 				Positioning_time = 150;
         gps.flag = 1;	 
         LON =	1;
@@ -1242,7 +1242,7 @@ void MPU9250_INT(void)
 	in2=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_12);
   if(in2 == 1)
 	 {		 
-		PPRINTF("In Motion\n\r ");
+		PPRINTF("In Motion\n\r");
 		mpuint_flags=1;		 
 		if(MLON == 1)
 		 {			

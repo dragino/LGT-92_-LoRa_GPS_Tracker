@@ -152,8 +152,6 @@ uint32_t start_time=0;
 	
 uint32_t AlarmSetTDC;
 
-uint8_t TDC_flag=0;
-
 uint8_t flag_1=1 ,LP = 0;
 
 extern uint8_t Alarm_times;
@@ -410,7 +408,7 @@ static void LORA_HasJoined( void )
 		MD=1;
 		set_sgm=1;
 	  Alarm_TX_DUTYCYCLE=60000;	
-	  Keep_TX_DUTYCYCLE=21600000;					
+	  Keep_TX_DUTYCYCLE=3600000;					
 	}
 
   LORA_RequestClass( LORAWAN_DEFAULT_CLASS );
@@ -690,16 +688,16 @@ static void LORA_RxData( lora_AppData_t *AppData )
 						}
 						else
 						{
-					    TDC_flag=1;
 							Server_TX_DUTYCYCLE=ServerSetTDC*1000;
-							PRINTF("ServerSetTDC: %d\n\r",ServerSetTDC);
+							PRINTF("Set TDC: %d ms\n\r",Server_TX_DUTYCYCLE);
 						}
+						Store_Config();							
 						if(LON == 1)
 						{
 							BSP_sensor_Init();
-							LED3_1;						
+							LED0_1;						
 		          HAL_Delay(1000);	
-		          LED3_0;
+		          LED0_0;
 						}	
 					}
 					break;
@@ -797,7 +795,7 @@ static void LORA_RxData( lora_AppData_t *AppData )
 				{
 					CHE = AppData->Buff[1];
 					customize_set8channel_set(CHE);
-					PRINTF("CHE: %02x\n\r",CHE);
+					PRINTF("Set CHE: %02x\n\r",CHE);
 					Store_Config();
 				}
 				break;
@@ -811,12 +809,12 @@ static void LORA_RxData( lora_AppData_t *AppData )
 					MD = AppData->Buff[1];
 					Threshold = AppData->Buff[2]; 
 					Freq = AppData->Buff[3]; 
-					PRINTF("MD: %02x,%02x,%02x\n\r",MD,Threshold,Freq);
+					PRINTF("Set MD: %02x,%02x,%02x\n\r",MD,Threshold,Freq);
 					}
 					else
 					{
 					MD = AppData->Buff[1];	
-					PRINTF("MD: %02x\n\r",MD);						
+					PRINTF("Set MD: %02x\n\r",MD);						
 					}
 					if(AppData->Buff[1]!=0x00)
 					{
@@ -826,14 +824,29 @@ static void LORA_RxData( lora_AppData_t *AppData )
 					Store_Config();
 				}				
 				break;
-			}				
+			}	
+			case 0xa9:
+				{
+					if( AppData->BuffSize == 4 )
+					{
+					  ServerSetTDC=( AppData->Buff[1]<<16 | AppData->Buff[2]<<8 | AppData->Buff[3] );//S
+					
+						if(ServerSetTDC<360)
+						{
+							PRINTF("KAT setting must be more than 6m\n\r");
+							Keep_TX_DUTYCYCLE=360000;
+						}
+						else
+						{
+							Keep_TX_DUTYCYCLE=ServerSetTDC*1000;
+							PRINTF("Set KAT: %d ms\n\r",Keep_TX_DUTYCYCLE);
+						}
+						Store_Config();	
+					}
+					break;
+				}			
 				default:
 					break;
-		}
-		if(TDC_flag==1)
-		{
-			Store_Config();	
-			TDC_flag=0;				
 		}
 }
 
@@ -972,9 +985,9 @@ void lora_send(void)
 					{
 					 LED1_1; 
 					}							
-					 HAL_Delay(500);
+					 HAL_Delay(200);
 					 LED1_0;
-				   HAL_Delay(500);				
+				   HAL_Delay(200);				
 				}
 				if(GPS_ALARM == 1)
 				{
@@ -1013,6 +1026,7 @@ void lora_send(void)
 						 }							 
 					    HAL_Delay(1000);	
 					    LED1_0;
+					 PPRINTF("Exit Alarm\r\n");
 					 DISABLE_IRQ( );
 				/*
 				 * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
@@ -1132,8 +1146,8 @@ void lora_send(void)
 					if(gps_time == 30 )
 					{
 						PRINTF("\r\n");
-						PRINTF("Fix Time:%02d \n\r",End_times); 
-						PRINTF("Fix Timeout (FTIME):%02d \n\r",Positioning_time);
+						PRINTF("Fix Time:%d s \n\r",End_times); 
+						PRINTF("Fix Timeout (FTIME):%d s \n\r",Positioning_time);
 						gps_time = 0;
 					}
        	}	
@@ -1154,13 +1168,13 @@ void lora_send(void)
              if(LON == 1)
              {									 
 						   LED3_1; 							 
-						   HAL_Delay(500);
+						   HAL_Delay(200);
 						   LED3_0;
-						   HAL_Delay(500);
+						   HAL_Delay(200);
 							 LED3_1; 							 
-						   HAL_Delay(500);
+						   HAL_Delay(200);
 						   LED3_0;
-						   HAL_Delay(500);
+						   HAL_Delay(200);
 						 }	 
 					}
 					if(GPS_ALARM == 1)
@@ -1201,6 +1215,7 @@ void lora_send(void)
 						 }							 
 						  HAL_Delay(1000);	
 						  LED1_0;
+					   PPRINTF("Exit Alarm\r\n");						 
 						 DISABLE_IRQ( );
 					/*
 					 * if an interrupt has occurred after DISABLE_IRQ, it is kept pending

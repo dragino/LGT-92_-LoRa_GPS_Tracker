@@ -148,7 +148,7 @@ void powerLED(void)
 
 	BSP_powerLED_Init();
 	LED0_1 ;
-	HAL_Delay(1000);
+	HAL_Delay(2000);
   LED0_0;
 
 }

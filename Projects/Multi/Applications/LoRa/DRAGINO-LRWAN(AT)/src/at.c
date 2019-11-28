@@ -1405,7 +1405,7 @@ ATEerror_t at_KAT_set(const char *param)
 	
 	if(txtimeout<360000)
 	{
-		PRINTF("KDC setting must be more than 6m\n\r");
+		PRINTF("KAT setting must be more than 6m\n\r");
 		Keep_TX_DUTYCYCLE=360000;
 		return AT_PARAM_ERROR;
 	}
