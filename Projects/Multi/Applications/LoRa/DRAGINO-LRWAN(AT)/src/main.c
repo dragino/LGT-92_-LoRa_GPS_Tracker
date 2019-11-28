@@ -1099,7 +1099,7 @@ void lora_send(void)
         /*Wait for next tx slot*/
         TimerStart( &TxTimer);
 			  LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-			  PRINTF("Server_TX_DUTYCYCLE11: %02d\n\r",APP_TX_DUTYCYCLE);		
+			  PRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);		
         PRINTF("LP == 1\n\r");				
 		    lora_state_Led();
 				a = 1;
@@ -1132,8 +1132,8 @@ void lora_send(void)
 					if(gps_time == 30 )
 					{
 						PRINTF("\r\n");
-						PRINTF("End_times:%02d \n\r",End_times); 
-						PRINTF("Positioning_time:%02d \n\r",Positioning_time);
+						PRINTF("Fix Time:%02d \n\r",End_times); 
+						PRINTF("Fix Timeout (FTIME):%02d \n\r",Positioning_time);
 						gps_time = 0;
 					}
        	}	
@@ -1242,7 +1242,7 @@ void send_data(void)
        /*Wait for next tx slot*/
        TimerStart( &TxTimer);
 			 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-			 PRINTF("Server_TX_DUTYCYCLE: %02d\n\r",APP_TX_DUTYCYCLE);
+			 PRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
 		   lora_state_Led();
   		 gps.flag = 1;
 			 BSP_sensor_Init();
@@ -1281,7 +1281,7 @@ void send_ALARM_data(void)
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
        /*Wait for next tx slot*/
        TimerStart( &TxTimer);		
-			 PRINTF("Server_TX_DUTYCYCLE: %02d\n\r",APP_TX_DUTYCYCLE);
+			 PRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
        lora_state_Led();
 			 BSP_sensor_Init();
 			 End_times = 0 ;
