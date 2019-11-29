@@ -726,38 +726,6 @@ static void LORA_RxData( lora_AppData_t *AppData )
 					}
 					break;
 				}
-				
-			case 3:
-				{
-					/*this port switches the class*/
-					if( AppData->BuffSize == 1 )
-					{
-						switch (  AppData->Buff[0] )
-						{
-							case 0:
-								{
-								LORA_RequestClass(CLASS_A);
-								PRINTF("CLASS_A\n\r");
-								break;
-								}
-								case 1:
-								{
-									LORA_RequestClass(CLASS_B);
-									PRINTF("CLASS_B\n\r");
-									break;
-								}
-								case 2:
-								{
-									LORA_RequestClass(CLASS_C);
-									PRINTF("CLASS_C\n\r");
-									break;
-								}
-								default:
-									break;
-						 }
-					 }
-				  break;
-				}
 
 			case 4:
 			{
@@ -800,9 +768,18 @@ static void LORA_RxData( lora_AppData_t *AppData )
 				}
 				break;
 			}	
-			case 7:
+			case 0xa5:
 			{
-				if(AppData->BuffSize == 4 )
+				 if(AppData->BuffSize == 2 )
+				{
+					MD = AppData->Buff[1];	
+					PRINTF("MD: %02x\n\r",MD);						
+					if(AppData->Buff[1]!=0x00)
+					{
+						start_time=HW_RTC_GetTimerValue();							
+					}					
+				}
+				else if(AppData->BuffSize == 4 )
 				{
 					if(AppData->Buff[1]==0x03)
 					{
@@ -811,18 +788,13 @@ static void LORA_RxData( lora_AppData_t *AppData )
 					Freq = AppData->Buff[3]; 
 					PRINTF("Set MD: %02x,%02x,%02x\n\r",MD,Threshold,Freq);
 					}
-					else
-					{
-					MD = AppData->Buff[1];	
-					PRINTF("Set MD: %02x\n\r",MD);						
-					}
 					if(AppData->Buff[1]!=0x00)
 					{
 						start_time=HW_RTC_GetTimerValue();							
 					}
-					md_flags=1;
-					Store_Config();
 				}				
+				md_flags=1;
+				Store_Config();
 				break;
 			}	
 			case 0xa9:
