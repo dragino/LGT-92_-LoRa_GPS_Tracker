@@ -66,6 +66,7 @@
  * CAYENNE_LPP is myDevices Application server.
  */
 //#define CAYENNE_LPP
+#define Firmware    0x01
 #define LPP_DATATYPE_DIGITAL_INPUT  0x0
 #define LPP_DATATYPE_ANOLOG_INPUT   0x02
 #define LPP_DATATYPE_HUMIDITY       0x68
@@ -575,7 +576,7 @@ static void Send( void )
    gps.longitude = 0;	
    start = 1;		
 	}	
-  FLAG = (int)(MD<<6 | LON<<5)& 0xFF;
+  FLAG = (int)(MD<<6 | LON<<5 | Firmware )& 0xFF;
 //	PRINTF("\n\rFLAG=%d  ",FLAG);
 	AppData.Port = LORAWAN_APP_PORT;
 	if(lora_getGPSState() == STATE_GPS_OFF)
@@ -741,14 +742,14 @@ static void LORA_RxData( lora_AppData_t *AppData )
 			
 			case 5:
 			{
-				if( AppData->BuffSize == 4 )
+				if( AppData->BuffSize == 2 )
 					{
-					  if((AppData->Buff[1]==0x00)&&(AppData->Buff[2]==0x00)&&(AppData->Buff[3]==0x01))
+					  if(AppData->Buff[1]==0x01)
 					  {
 							lora_config_reqack_set(LORAWAN_CONFIRMED_MSG);
 							Store_Config();
 					  }
-						else if((AppData->Buff[1]==0x00)&&(AppData->Buff[2]==0x00)&&(AppData->Buff[3]==0x00))
+						else if(AppData->Buff[1]==0x00)
 						{
 							lora_config_reqack_set(LORAWAN_UNCONFIRMED_MSG);
 							Store_Config();
@@ -757,7 +758,7 @@ static void LORA_RxData( lora_AppData_t *AppData )
 					break;
 			}
 				
-			case 6:
+			case 7:
 			{
 				if(AppData->BuffSize == 2 )
 				{

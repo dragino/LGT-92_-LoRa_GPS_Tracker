@@ -37,6 +37,9 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 // Definitions
 #define CHANNELS_MASK_SIZE              6
 
+// A mask to select only valid 500KHz channels
+#define CHANNELS_MASK_500KHZ_MASK       0x00FF
+
 static uint8_t TXpower=0;
 static uint8_t TXdr=0;
 extern LoRaMacParams_t LoRaMacParams;
@@ -676,7 +679,7 @@ uint8_t RegionUS915LinkAdrReq( LinkAdrReqParams_t* linkAdrReq, int8_t* drOut, in
             channelsMask[2] = 0xFFFF;
             channelsMask[3] = 0xFFFF;
             // Apply chMask to channels 64 to 71
-            channelsMask[4] = linkAdrParams.ChMask;
+            channelsMask[4] = linkAdrParams.ChMask & CHANNELS_MASK_500KHZ_MASK;
         }
         else if( linkAdrParams.ChMaskCtrl == 7 )
         {
@@ -686,12 +689,61 @@ uint8_t RegionUS915LinkAdrReq( LinkAdrReqParams_t* linkAdrReq, int8_t* drOut, in
             channelsMask[2] = 0x0000;
             channelsMask[3] = 0x0000;
             // Apply chMask to channels 64 to 71
-            channelsMask[4] = linkAdrParams.ChMask;
+            channelsMask[4] = linkAdrParams.ChMask & CHANNELS_MASK_500KHZ_MASK;
         }
         else if( linkAdrParams.ChMaskCtrl == 5 )
         {
-            // RFU
-            status &= 0xFE; // Channel mask KO
+            // Start value for comparision
+            uint8_t bitMask = 1;
+
+            // cntChannelMask for channelsMask[0] until channelsMask[3]
+            uint8_t cntChannelMask = 0;
+
+            // i will be 1, 2, 3, ..., 7
+            for( uint8_t i = 0; i <= 7; i++ )
+            {
+                // 8 MSBs of ChMask are RFU
+                // Checking if the ChMask is set, then true
+                if( ( ( linkAdrParams.ChMask & 0x00FF ) & ( bitMask << i ) ) != 0 )
+                {
+                    if( ( i % 2 ) == 0 )
+                    {
+                        // Enable a bank of 8 125kHz channels, 8 LSBs
+                        channelsMask[cntChannelMask] |= 0x00FF;
+                        // Enable the corresponding 500kHz channel
+                        channelsMask[4] |= ( bitMask << i );
+                    }
+                    else
+                    {
+                        // Enable a bank of 8 125kHz channels, 8 MSBs
+                        channelsMask[cntChannelMask] |= 0xFF00;
+                        // Enable the corresponding 500kHz channel
+                        channelsMask[4] |= ( bitMask << i );
+                        // cntChannelMask increment for uneven i
+                        cntChannelMask++;
+                    }
+                }
+                // ChMask is not set
+                else
+                {
+                    if( ( i % 2 ) == 0 )
+                    {
+                        // Disable a bank of 8 125kHz channels, 8 LSBs
+                        channelsMask[cntChannelMask] &= 0xFF00;
+                        // Disable the corresponding 500kHz channel
+                        channelsMask[4] &= ~( bitMask << i );
+                    }
+                    else
+                    {
+                        // Enable a bank of 8 125kHz channels, 8 MSBs
+                        channelsMask[cntChannelMask] &= 0x00FF;
+                        // Disable the corresponding 500kHz channel
+                        channelsMask[4] &= ~( bitMask << i );
+                        // cntChannelMask increment for uneven i
+                        cntChannelMask++;
+                    }
+                }
+            }
         }
         else
         {
