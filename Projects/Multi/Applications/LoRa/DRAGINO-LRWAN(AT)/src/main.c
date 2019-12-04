@@ -364,6 +364,7 @@ int main( void )
 			TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
       /*Wait for next tx slot*/
       TimerStart( &TxTimer);
+			TimerStart( &TxTimer2);	
 			motion_flags=0;		
 			PPRINTF("Exit static mode\r\n");
 		}
@@ -982,8 +983,7 @@ void lora_send(void)
 					 start = 0;						 
 					 ALARM = 0;					 
 					 Alarm_LED = 0;
-           GPS_ALARM = 0;						 
-					 PRINTF("led\n\r");			 
+           GPS_ALARM = 0;						  
 					 APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
 					 
 					 TimerInit( &TxTimer, OnTxTimerEvent );
@@ -991,6 +991,7 @@ void lora_send(void)
 			
 					 /*Wait for next tx slot*/
 					 TimerStart( &TxTimer);
+					 TimerStart( &TxTimer2);	
 					 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );				 
 					 if(LON == 1)
 						 {
@@ -1032,7 +1033,7 @@ void lora_send(void)
 	        Send( );	
 			    TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
           /*Wait for next tx slot*/
-          TimerStart( &TxTimer);
+          TimerStart( &TxTimer);					
 					GS = 0;
 				}
 				
@@ -1085,6 +1086,7 @@ void lora_send(void)
 			  TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
         /*Wait for next tx slot*/
         TimerStart( &TxTimer);
+				TimerStart( &TxTimer2);					
 			  LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
 			  PRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);		
         PRINTF("LP == 1\n\r");				
@@ -1180,6 +1182,7 @@ void lora_send(void)
 				
 						 /*Wait for next tx slot*/
 						 TimerStart( &TxTimer);
+						 TimerStart( &TxTimer2);							 
 						 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );					 
 						 if(LON == 1)
 						 {
@@ -1229,6 +1232,7 @@ void send_data(void)
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
        /*Wait for next tx slot*/
        TimerStart( &TxTimer);
+			 TimerStart( &TxTimer2);				 
 			 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
 			 PRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
 		   lora_state_Led();
