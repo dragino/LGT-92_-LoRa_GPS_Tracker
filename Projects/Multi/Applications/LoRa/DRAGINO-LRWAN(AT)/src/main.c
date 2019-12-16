@@ -66,7 +66,7 @@
  * CAYENNE_LPP is myDevices Application server.
  */
 //#define CAYENNE_LPP
-#define Firmware    0x01
+#define Firmware    0x02
 #define LPP_DATATYPE_DIGITAL_INPUT  0x0
 #define LPP_DATATYPE_ANOLOG_INPUT   0x02
 #define LPP_DATATYPE_HUMIDITY       0x68
@@ -154,6 +154,10 @@ uint32_t start_time=0;
 uint32_t AlarmSetTDC;
 
 uint8_t flag_1=1 ,LP = 0;
+
+uint8_t alarm_flags=0;
+
+uint8_t payloadlens=0;
 
 extern uint8_t Alarm_times;
 
@@ -403,7 +407,7 @@ static void LORA_HasJoined( void )
   printf_joinmessage();
 	}	
 	
-	if(Positioning_time==0)
+	if(Keep_TX_DUTYCYCLE==0)
 	{
 		Positioning_time=150;
 		LON =	1;
@@ -412,7 +416,7 @@ static void LORA_HasJoined( void )
 	  Alarm_TX_DUTYCYCLE=60000;	
 	  Keep_TX_DUTYCYCLE=3600000;					
 	}
-
+	
   LORA_RequestClass( LORAWAN_DEFAULT_CLASS );
 	
 	start_time=HW_RTC_GetTimerValue();	
@@ -462,7 +466,7 @@ static void Send( void )
 	{
 
 		LP = 1;
-		PRINTF("\n\rBattery voltage too low\r\n");
+		PPRINTF("\n\rBattery voltage too low\r\n");
 	}
 	else
 	{
@@ -544,8 +548,8 @@ static void Send( void )
    gps_latitude = gps.latitude;
 	 gps_longitude = gps.longitude;
 	 gps_state_on();
-	 PRINTF("\n\rRoll=%0.2f  ",((int)(Roll1*100))/100.0);
-	 PRINTF("Pitch=%0.2f\n\r",((int)(Pitch1*100))/100.0);
+	 PPRINTF("\n\rRoll=%0.2f  ",((int)(Roll1*100))/100.0);
+	 PPRINTF("Pitch=%0.2f\n\r",((int)(Pitch1*100))/100.0);
 //	 PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
 //	 PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
    
@@ -554,29 +558,34 @@ static void Send( void )
 	   latitude = gps_latitude*1000000;
 	   latitude = (~latitude) ;
      gps_latitude = (float)(latitude)/1000000;	 
-     PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);		 
+     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
 	 }
 	 else
 	 {
 		latitude = gps_latitude*1000000;
-    PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);		 
+    PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
 	 }
 	 if(gps.lgtEW != 'E')
 	 {
 	   longitude = gps_longitude*1000000;	 
 	   longitude = (~longitude) ;
 		 gps_longitude = (float)(longitude)/1000000;
-     PRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);		 
+     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);		 
 	 }
 	 else
 	 {
 		 longitude = gps_longitude*1000000; 	
-     PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);		 
+     PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);		 
 	 }
    gps.latitude = 0;
    gps.longitude = 0;	
    start = 1;		
 	}	
+	else
+	{
+	PPRINTF("\r\n");
+	PPRINTF("GPS NO FIX\n\r");			
+	}
   FLAG = (int)(MD<<6 | LON<<5 | Firmware )& 0xFF;
 //	PRINTF("\n\rFLAG=%d  ",FLAG);
 	AppData.Port = LORAWAN_APP_PORT;
@@ -653,6 +662,7 @@ static void Send( void )
 	 {
 	 gps.flag = 1;
 	 AppData.BuffSize = i;
+	 payloadlens=i;		 
    LORA_send( &AppData, lora_config_reqack_get());
 	}
 	else
@@ -715,7 +725,7 @@ static void LORA_RxData( lora_AppData_t *AppData )
 							 Alarm_times = 60;
 							 Alarm_times1 = 60;
                GPS_ALARM = 0;
-							 ALARM = 0;									
+							 ALARM = 0;								
 							 if(LON == 1)
 							 {	 
 							  BSP_sensor_Init();									 
@@ -723,7 +733,7 @@ static void LORA_RxData( lora_AppData_t *AppData )
 						    HAL_Delay(1000);	
 						    LED1_0;
 							 }	
-							 PPRINTF("Exit Alarm\r\n");
+							 PRINTF("Exit Alarm\r\n");
 						}
 					}
 					break;
@@ -831,10 +841,15 @@ static void OnTxTimerEvent( void )
 	gps.flag = 1;
   gps.latitude = 0;
   gps.longitude = 0;	
+	
 	if(lora_getState() != STATE_GPS_SEND )
 	 { 	
-		Send( );			 
+			if(lora_getState() != STATE_LORA_ALARM)
+		{
+	    lora_state_GPS_Send();
+		}
 	 }
+	 
 	TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
 	
   /*Wait for next tx slot*/
@@ -974,7 +989,7 @@ void lora_send(void)
            a = 100;		
            GPS_ALARM = 1;
            SendData = 0;						 
-           PRINTF("send data \n\r");					 
+           PPRINTF("send Alarm data \n\r");					 
 				 }
 				 if(Alarm_times1 == 60)
 				 {
@@ -983,16 +998,7 @@ void lora_send(void)
 					 start = 0;						 
 					 ALARM = 0;					 
 					 Alarm_LED = 0;
-           GPS_ALARM = 0;						  
-					 APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
-					 
-					 TimerInit( &TxTimer, OnTxTimerEvent );
-					 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
-			
-					 /*Wait for next tx slot*/
-					 TimerStart( &TxTimer);
-					 TimerStart( &TxTimer2);	
-					 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );				 
+           GPS_ALARM = 0;						  			 
 					 if(LON == 1)
 						 {
 					    BSP_sensor_Init();								 
@@ -1035,6 +1041,7 @@ void lora_send(void)
           /*Wait for next tx slot*/
           TimerStart( &TxTimer);					
 					GS = 0;
+					gps_time = 0;
 				}
 				
 					if(GPS_ALARM == 1)
@@ -1049,30 +1056,36 @@ void lora_send(void)
 						Alarm_times = 60;
 						GPS_POWER_OFF();
 						BSP_sensor_Init();
-						PRINTF("\n\r");	
+						PPRINTF("\n\r");	
 					}
 					if( Alarm_LED < 60)
 					 { 
+						GPS_POWER_OFF();
+						alarm_flags=1;
 						LED3_1; 
 						HAL_Delay(500);
 						LED3_0;
 					  HAL_Delay(500);
 						Alarm_LED ++; 
 						GPS_ALARM = 1;
-						PRINTF("Alarm_LED:%d\n\r",Alarm_LED);	
+						PPRINTF("Alarm_LED:%d\n\r",Alarm_LED);	
 					 }
 					 if( Alarm_LED == 60)
 					 {
+						alarm_flags=0;
 						Alarm_times = 0; 
-						GPS_ALARM = 1;					 
+						GPS_ALARM = 1;						 
 					 }
-				  }
-					
+				  }	
+				
+        if(alarm_flags==0)	
+				{					
 			  POWER_ON();
 			  GPS_INPUT();
-				LP = 0;
-				LED0_0;
 			  Start_times ++;
+				}
+				LP = 0;
+				LED0_0;							
 			}
 					
 			if(LP == 1)
@@ -1088,8 +1101,8 @@ void lora_send(void)
         TimerStart( &TxTimer);
 				TimerStart( &TxTimer2);					
 			  LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-			  PRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);		
-        PRINTF("LP == 1\n\r");				
+			  PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);		
+        PPRINTF("LP == 1\n\r");				
 		    lora_state_Led();
 				a = 1;
 
@@ -1116,13 +1129,13 @@ void lora_send(void)
 				  }
 					HAL_Delay(200);
 				}
-				if(End_times < Positioning_time)
+				if(End_times <= Positioning_time)
 				{
 					if(gps_time == 30 )
 					{
-						PRINTF("\r\n");
-						PRINTF("Fix Time:%d s \n\r",End_times); 
-						PRINTF("Fix Timeout (FTIME):%d s \n\r",Positioning_time);
+						PPRINTF("\r\n");
+						PPRINTF("Fix Time:%d s \n\r",End_times); 
+						PPRINTF("Fix Timeout (FTIME):%d s \n\r",Positioning_time);
 						gps_time = 0;
 					}
        	}	
@@ -1138,7 +1151,6 @@ void lora_send(void)
 						 gps_state_off();	
              a = 100;						
 						 send_data();
-						 PRINTF("GPS NO FIX\n\r");
 						 GPS_ALARM = 0;	
              if(LON == 1)
              {									 
@@ -1164,7 +1176,7 @@ void lora_send(void)
 						 GPS_ALARM = 1;
 						 a = 100;	
 						 SendData = 0;
-					   PRINTF("GPS NO FIX\n\r");							 
+						 PPRINTF("send Alarm data \n\r");									 
 					 }
 					 if(Alarm_times1 == 60)
 					 {
@@ -1173,17 +1185,7 @@ void lora_send(void)
 						 start = 0;	
 						 ALARM = 0;
 						 Alarm_LED = 0;
-						 GPS_ALARM = 0;					 
-						 PRINTF("led\n\r");			 
-						 APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
-						 
-						 TimerInit( &TxTimer, OnTxTimerEvent );
-						 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
-				
-						 /*Wait for next tx slot*/
-						 TimerStart( &TxTimer);
-						 TimerStart( &TxTimer2);							 
-						 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );					 
+						 GPS_ALARM = 0;							 
 						 if(LON == 1)
 						 {
 							BSP_sensor_Init();								 
@@ -1211,7 +1213,7 @@ void lora_send(void)
 		}
 		default:
     {
-			PRINTF("default\n\r");
+			PPRINTF("default\n\r");
 			lora_state_Led();	
       start = 0;				
 		  break;
@@ -1222,10 +1224,14 @@ void lora_send(void)
 void send_data(void)
 {
        start = 1;
-	     if(motion_flags==0)
+			 if(motion_flags==1)
 			 {
-			 APP_TX_DUTYCYCLE = Server_TX_DUTYCYCLE;
-			 }
+				 APP_TX_DUTYCYCLE = Keep_TX_DUTYCYCLE;
+				}		
+				else	
+				{							
+				  APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
+				}
 			 TimerInit( &TxTimer, OnTxTimerEvent );
 	     TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
 	     Send( );	
@@ -1234,12 +1240,13 @@ void send_data(void)
        TimerStart( &TxTimer);
 			 TimerStart( &TxTimer2);				 
 			 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-			 PRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
+			 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
 		   lora_state_Led();
   		 gps.flag = 1;
 			 BSP_sensor_Init();
        LED0_0;
 			 End_times = 0 ;
+			 gps_time = 0;
 			 gps.GSA_mode2 = 0;
 			if( MD == 0)
 			 {
@@ -1273,10 +1280,11 @@ void send_ALARM_data(void)
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
        /*Wait for next tx slot*/
        TimerStart( &TxTimer);		
-			 PRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
+			 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
        lora_state_Led();
 			 BSP_sensor_Init();
 			 End_times = 0 ;
+			 gps_time = 0;	
 	     LED0_0;
 	     a = 100;
        if(LON == 1)

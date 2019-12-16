@@ -67,6 +67,7 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "lora.h"
 extern int exti_flag;
 extern uint32_t MD ;
+extern int ALARM;
 extern bool is_lora_joined;
 /** @addtogroup STM32L1xx_HAL_Examples
   * @{
@@ -209,7 +210,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		{
 		  if(MD!=0)
 			{
-			if(lora_getState() != STATE_GPS_SEND)
+			if((lora_getState() != STATE_GPS_SEND)&&(ALARM == 0))
 			{
       MPU9250_INT();
 			}

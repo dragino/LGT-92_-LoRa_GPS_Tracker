@@ -1458,12 +1458,6 @@ ATEerror_t at_ftime_set(const char *param)
   {
     return AT_PARAM_ERROR;
   }
-	if(positime<30)
-  {
-		PRINTF("Positioning_time setting must be more than 30S\n\r");	
-    Positioning_time=30;		
-    return AT_PARAM_ERROR;
-  }	
 
   Positioning_time=positime;
 	
