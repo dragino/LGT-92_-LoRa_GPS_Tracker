@@ -67,8 +67,9 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "lora.h"
 extern int exti_flag;
 extern uint32_t MD ;
-extern int ALARM;
+extern uint32_t GPS_ALARM;
 extern bool is_lora_joined;
+extern uint8_t stop_flag;
 /** @addtogroup STM32L1xx_HAL_Examples
   * @{
   */
@@ -198,7 +199,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if (GPIO_Pin == GPIO_PIN_14)
 	{
       lora_state_INT();
-	  	POWER_ON();
 	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_14);
 	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 		
@@ -210,7 +210,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		{
 		  if(MD!=0)
 			{
-			if((lora_getState() != STATE_GPS_SEND)&&(ALARM == 0))
+			if((stop_flag==1)&&(GPS_ALARM == 0))
 			{
       MPU9250_INT();
 			}

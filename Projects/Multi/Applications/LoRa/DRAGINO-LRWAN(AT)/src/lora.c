@@ -1231,7 +1231,6 @@ void lora_state_INT(void)
 		GS = 1;
 		Alarm_LED = 0;
 		State = STATE_GPS_SEND;
-		APP_TX_DUTYCYCLE = 0;
 		LPM_SetOffMode(LPM_APPLI_Id , LPM_Enable );
 	 	
 	}

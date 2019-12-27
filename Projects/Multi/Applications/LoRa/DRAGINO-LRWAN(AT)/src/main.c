@@ -105,6 +105,8 @@ uint32_t FLAG=0;
 
 uint8_t send_fail=0;
 
+uint8_t TDC_flag=0;
+
 /*!
  * LoRaWAN Adaptive Data Rate
  * @note Please note that when ADR is enabled the end-device should be static
@@ -157,13 +159,15 @@ uint8_t flag_1=1 ,LP = 0;
 
 uint8_t alarm_flags=0;
 
+uint8_t stop_flag=0;
+
 uint8_t payloadlens=0;
+
+uint8_t join_flag=0;
 
 extern uint8_t Alarm_times;
 
 extern uint8_t Alarm_times1;
-
-extern uint32_t start;
 
 extern uint16_t AD_code3;
 
@@ -227,11 +231,16 @@ void send_ALARM_data(void);
 /* start the tx process*/
 static void LoraStartTx(TxEventType_t EventType);
 
+static void LoraStartjoin(TxEventType_t EventType);
+
 static TimerEvent_t TxTimer;
 static TimerEvent_t TxTimer2;
+static TimerEvent_t TxTimer3;
 
 /* tx timer callback function*/
 static void OnTxTimerEvent( void );
+
+static void OnTxTimerEvent2( void );
 
 static void time(TxEventType_t EventType);
 
@@ -359,12 +368,12 @@ int main( void )
 
 		if((motion_flags==1)&&(mpuint_flags==1))
 		{
+			APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;			
 			TimerInit( &TxTimer, OnTxTimerEvent );
 			gps.latitude = 0;
 			gps.longitude = 0;
 			lora_state_GPS_Send();      			
 		  lora_send();
-			APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
 			TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
       /*Wait for next tx slot*/
       TimerStart( &TxTimer);
@@ -422,11 +431,10 @@ static void LORA_HasJoined( void )
 	start_time=HW_RTC_GetTimerValue();	
 	
 	#if defined(LoRa_Sensor_Node) /*LSN50 Preprocessor compile swicth:hw_conf.h*/
-	LoraStartTx( TX_ON_TIMER);
+	LoraStartjoin( TX_ON_TIMER);	
 	time(TX_ON_TIMER);
   lora_state_GPS_Send();
 
-	start = 0;
 	gps.flag = 1;
 	is_lora_joined = 1;
 	#endif
@@ -545,8 +553,6 @@ static void Send( void )
 	
 	if(gps.latitude > 0 && gps.longitude > 0)		
  	{
-   gps_latitude = gps.latitude;
-	 gps_longitude = gps.longitude;
 	 gps_state_on();
 	 PPRINTF("\n\rRoll=%0.2f  ",((int)(Roll1*100))/100.0);
 	 PPRINTF("Pitch=%0.2f\n\r",((int)(Pitch1*100))/100.0);
@@ -578,8 +584,7 @@ static void Send( void )
      PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);		 
 	 }
    gps.latitude = 0;
-   gps.longitude = 0;	
-   start = 1;		
+   gps.longitude = 0;		
 	}	
 	else
 	{
@@ -658,20 +663,12 @@ static void Send( void )
 			 AppData.Buff[i++] =(int)(Pitch1*100)>>8;       //Pitch
 			 AppData.Buff[i++] =(int)(Pitch1*100);
 		}		
-	if(start == 1 )
-	 {
+
 	 gps.flag = 1;
 	 AppData.BuffSize = i;
 	 payloadlens=i;		 
    LORA_send( &AppData, lora_config_reqack_get());
-	}
-	else
-	{
-		if(lora_getState() != STATE_LORA_ALARM)
-		{
-	    lora_state_GPS_Send();
-		}
-	}
+
 }
 
 
@@ -700,17 +697,17 @@ static void LORA_RxData( lora_AppData_t *AppData )
 						}
 						else
 						{
+							TDC_flag=1;
 							Server_TX_DUTYCYCLE=ServerSetTDC*1000;
 							PRINTF("Set TDC: %d ms\n\r",Server_TX_DUTYCYCLE);
-						}
-						Store_Config();							
+						}						
 						if(LON == 1)
 						{
 							BSP_sensor_Init();
 							LED0_1;						
 		          HAL_Delay(1000);	
-		          LED0_0;
 						}	
+						  LED0_0;
 					}
 					break;
 				}
@@ -731,8 +728,8 @@ static void LORA_RxData( lora_AppData_t *AppData )
 							  BSP_sensor_Init();									 
 						    LED1_1;							 
 						    HAL_Delay(1000);	
-						    LED1_0;
 							 }	
+							  LED1_0;
 							 PRINTF("Exit Alarm\r\n");
 						}
 					}
@@ -832,6 +829,15 @@ static void LORA_RxData( lora_AppData_t *AppData )
 				default:
 					break;
 		}
+	if(TDC_flag==1)
+	{
+		Store_Config();
+		TimerInit( &TxTimer, OnTxTimerEvent );
+    TimerSetValue( &TxTimer,  Server_TX_DUTYCYCLE);		
+    TimerStart( &TxTimer); 
+		TimerStart( &TxTimer2);	
+		TDC_flag=0;
+	}			
 }
 
 #if defined(LoRa_Sensor_Node)
@@ -844,10 +850,7 @@ static void OnTxTimerEvent( void )
 	
 	if(lora_getState() != STATE_GPS_SEND )
 	 { 	
-			if(lora_getState() != STATE_LORA_ALARM)
-		{
 	    lora_state_GPS_Send();
-		}
 	 }
 	 
 	TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
@@ -921,6 +924,36 @@ static void time(TxEventType_t EventType)
     timing();
   }
 }
+
+static void OnTxTimerEvent2( void )
+{
+	if(join_flag==0)
+	{
+	TimerSetValue( &TxTimer3,  1000);
+	
+  /*Wait for next tx slot*/
+  TimerStart( &TxTimer3);
+		
+	join_flag++;
+	}
+	else if(join_flag==1)
+	{
+	LoraStartTx(TX_ON_TIMER);
+	join_flag++;
+	}
+}
+
+static void LoraStartjoin(TxEventType_t EventType)
+{
+  if (EventType == TX_ON_TIMER)
+  {
+    /* send everytime timer elapses */
+    TimerInit( &TxTimer3, OnTxTimerEvent2 );
+    TimerSetValue( &TxTimer3, 1000); 
+	
+    OnTxTimerEvent2();
+  }
+}
 #endif
 
 static void LORA_ConfirmClass ( DeviceClass_t Class )
@@ -943,18 +976,20 @@ void lora_send(void)
 		case STATE_LED:
 		{
 		  gps.flag = 1;
-			start = 0;
+			stop_flag=1;
 			GPS_POWER_OFF();
 			LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );		
 			break;
 		}
 		case  STATE_GPS_SEND:
 		{	
-
+      stop_flag=0;
 			if(gps.GSA_mode2 == 3)		
   		{
 				if(gps.latitude > 0 && gps.longitude > 0)
-				{
+				{	
+					gps_latitude = gps.latitude;
+					gps_longitude = gps.longitude;						
 				  SendData = 1;
 				}
 			}	
@@ -963,28 +998,24 @@ void lora_send(void)
 			{				
 			 if(GPS_ALARM == 0)
 				{
-				  gps_state_on();
-					gps_latitude = gps.latitude;
-					gps_longitude = gps.longitude;							
+				  gps_state_on();						
 					send_data();						
 			    a = 1;
 					GPS_ALARM = 0;
           SendData = 0;	
 					if(LON == 1)
 					{
-					 LED1_1; 
-					}							
+					 LED1_1; 						
 					 HAL_Delay(200);
 					 LED1_0;
-				   HAL_Delay(200);				
+				   HAL_Delay(200);	
+					}							
 				}
 				if(GPS_ALARM == 1)
 				{
 				 if(Alarm_times < 60)
 				 {			 
-					 gps_state_on();
-					 gps_latitude = gps.latitude;
-					 gps_longitude = gps.longitude;						 
+					 gps_state_on();		 
 					 send_ALARM_data();							 
            a = 100;		
            GPS_ALARM = 1;
@@ -993,18 +1024,16 @@ void lora_send(void)
 				 }
 				 if(Alarm_times1 == 60)
 				 {
-					 start_time=HW_RTC_GetTimerValue();		
-					 lora_state_GPS_Send();
-					 start = 0;						 
+					 start_time=HW_RTC_GetTimerValue();							 
 					 ALARM = 0;					 
 					 Alarm_LED = 0;
            GPS_ALARM = 0;						  			 
 					 if(LON == 1)
 						 {
 					    BSP_sensor_Init();								 
-					    LED1_1;
-						 }							 
+					    LED1_1;							 
 					    HAL_Delay(1000);	
+						 }
 					    LED1_0;
 					 PPRINTF("Exit Alarm\r\n");
 					 DISABLE_IRQ( );
@@ -1030,7 +1059,6 @@ void lora_send(void)
 				{			
 					ALARM = 1;	
 					gps_state_off();				
-					start = 1;
 					gps.latitude = 0;
 					gps.longitude = 0;						
 			    APP_TX_DUTYCYCLE = Server_TX_DUTYCYCLE;
@@ -1050,7 +1078,6 @@ void lora_send(void)
 					{
 						gps.flag = 1;
 						gps.GSA_mode2 = 0;
-						start = 1;	
 						ALARM = 1;						
 						Alarm_times1 = 0;
 						Alarm_times = 60;
@@ -1090,7 +1117,6 @@ void lora_send(void)
 					
 			if(LP == 1)
       {
-				start = 1;
 				gps_state_no();
 			  APP_TX_DUTYCYCLE = Server_TX_DUTYCYCLE;
 			  TimerInit( &TxTimer, OnTxTimerEvent );
@@ -1105,7 +1131,6 @@ void lora_send(void)
         PPRINTF("LP == 1\n\r");				
 		    lora_state_Led();
 				a = 1;
-
 			}	
 			
 				if(Start_times == TIMES)
@@ -1118,17 +1143,9 @@ void lora_send(void)
 					  LED0_1;
 				   }
 					TIMES = 10000;
-				  if( MD == 0)
-				  {
-					  MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep         
-						APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
-						TimerInit( &TxTimer, OnTxTimerEvent );
-						TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
-						/*Wait for next tx slot*/
-						TimerStart( &TxTimer);
-				  }
 					HAL_Delay(200);
 				}
+				
 				if(End_times <= Positioning_time)
 				{
 					if(gps_time == 30 )
@@ -1181,17 +1198,15 @@ void lora_send(void)
 					 if(Alarm_times1 == 60)
 					 {
 						 start_time=HW_RTC_GetTimerValue();		
-						 lora_state_GPS_Send();
-						 start = 0;	
 						 ALARM = 0;
 						 Alarm_LED = 0;
 						 GPS_ALARM = 0;							 
 						 if(LON == 1)
 						 {
 							BSP_sensor_Init();								 
-						  LED1_1;
-						 }							 
+						  LED1_1;						 
 						  HAL_Delay(1000);	
+						 }								 
 						  LED1_0;
 					   PPRINTF("Exit Alarm\r\n");						 
 						 DISABLE_IRQ( );
@@ -1207,15 +1222,14 @@ void lora_send(void)
 						 ENABLE_IRQ();			 
 					 }	
 					}	
-      	 send_fail=0;							
+      	 send_fail=0;				
 			 }
 		 break;
 		}
 		default:
     {
 			PPRINTF("default\n\r");
-			lora_state_Led();	
-      start = 0;				
+			lora_state_Led();				
 		  break;
     }	
 	}
@@ -1223,7 +1237,6 @@ void lora_send(void)
 
 void send_data(void)
 {
-       start = 1;
 			 if(motion_flags==1)
 			 {
 				 APP_TX_DUTYCYCLE = Keep_TX_DUTYCYCLE;
@@ -1241,6 +1254,14 @@ void send_data(void)
 			 TimerStart( &TxTimer2);				 
 			 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
 			 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
+			 if( MD == 0)
+			 {
+					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+			 }
+			 else
+			 {
+					MPU_INT_Init();
+			 }				
 		   lora_state_Led();
   		 gps.flag = 1;
 			 BSP_sensor_Init();
@@ -1248,14 +1269,6 @@ void send_data(void)
 			 End_times = 0 ;
 			 gps_time = 0;
 			 gps.GSA_mode2 = 0;
-			if( MD == 0)
-			 {
-					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
-			 }
-			else
-			 {
-					MPU_INT_Init();
-			 }
        DISABLE_IRQ( );
     /*
      * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
@@ -1270,9 +1283,7 @@ void send_data(void)
 }
 
 void send_ALARM_data(void)
-{
-	
-		   start = 1;		
+{	
        APP_TX_DUTYCYCLE=Alarm_TX_DUTYCYCLE;	
        TimerInit( &TxTimer, OnTxTimerEvent );			 
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);		    
@@ -1280,28 +1291,30 @@ void send_ALARM_data(void)
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
        /*Wait for next tx slot*/
        TimerStart( &TxTimer);		
+			 LPM_SetOffMode(LPM_APPLI_Id , LPM_Enable );
 			 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
+			 if( MD == 0)
+			 {
+					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+			 }
+			 else
+			 {
+					MPU_INT_Init();
+			 }	
        lora_state_Led();
 			 BSP_sensor_Init();
 			 End_times = 0 ;
 			 gps_time = 0;	
 	     LED0_0;
 	     a = 100;
+			 gps.GSA_mode2 = 0;
        if(LON == 1)
 			 {				 
-		  	 LED3_1; 
+		  	 LED3_1;
+			   HAL_Delay(1000);				 
 			 }
-			   HAL_Delay(1000);
 			   LED3_0;
-
-			if( MD == 0)
-			 {
-					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
-			 }
-			else
-			 {
-					MPU_INT_Init();
-			 }		 	
+	 	
        DISABLE_IRQ( );
     /*
      * if an interrupt has occurred after DISABLE_IRQ, it is kept pending

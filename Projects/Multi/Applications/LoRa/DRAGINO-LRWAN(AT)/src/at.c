@@ -81,7 +81,6 @@ extern uint32_t start_time;
 uint32_t Positioning_time = 150;
 
 uint32_t set_sgm = 0;
-uint32_t start = 0;
 uint32_t s_timer = 1;
 uint8_t symbtime1_value=0;  //RX1windowtimeout 
 uint8_t flag1=0;
@@ -225,7 +224,6 @@ ATEerror_t at_FDR(const char *param)
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);
 	AT_PRINTF("OK\n\r");
 	NVIC_SystemReset();
-	start = 1;
 	s_timer = 1;
   return AT_OK;
 }

@@ -296,12 +296,6 @@ bool SX1276IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh
     bool status = true;
     int16_t rssi = 0;
     uint32_t carrierSenseTime = 0;
-
-	    if( SX1276GetStatus( ) != RF_IDLE )
-    {
-        return false;
-    }
-
 		
     SX1276SetModem( modem );
 
@@ -909,6 +903,7 @@ void SX1276SetStby( void )
 void SX1276SetRx( uint32_t timeout )
 {
     bool rxContinuous = false;
+    TimerStop( &TxTimeoutTimer );
 
     switch( SX1276.Settings.Modem )
     {
@@ -1071,6 +1066,8 @@ void SX1276SetRx( uint32_t timeout )
 
 void SX1276SetTx( uint32_t timeout )
 {
+    TimerStop( &RxTimeoutTimer );
+	
     TimerSetValue( &TxTimeoutTimer, timeout );
 
     switch( SX1276.Settings.Modem )
@@ -1625,7 +1622,7 @@ void SX1276OnDio0Irq( void )
                         RadioEvents->RxDone( RxTxBuffer, SX1276.Settings.LoRaPacketHandler.Size, SX1276.Settings.LoRaPacketHandler.RssiValue, SX1276.Settings.LoRaPacketHandler.SnrValue );
  												TimerTime_t ts = TimerGetCurrentTime(); 
 												PPRINTF("[%lu]", ts); 
-												PPRINTF( "rxDone\n\r" );
+												PPRINTF("rxDone\n\r" );
 												PPRINTF("Rssi= %d\n\r",SX1276.Settings.LoRaPacketHandler.RssiValue);
                     }
                 }
