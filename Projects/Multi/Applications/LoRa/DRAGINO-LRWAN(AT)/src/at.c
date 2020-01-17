@@ -60,6 +60,7 @@
 #include "hw_msp.h"
 #include "flash_eraseprogram.h"
 #include "timeServer.h"
+#include "bsp.h"
 
 /* External variables --------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -77,6 +78,8 @@ extern uint32_t Alarm_TX_DUTYCYCLE;
 extern uint32_t Keep_TX_DUTYCYCLE;
 
 extern uint32_t start_time;
+
+extern uint16_t AD_code3;
 
 uint32_t Positioning_time = 150;
 
@@ -1547,9 +1550,10 @@ ATEerror_t at_symbtimeout2LSB_set(const char *param)
 
 ATEerror_t at_bat_get(const char *param)
 { 
-  PRINTF("AT+BAT="); 
-	print_d(HW_GetBatteryLevel());
-	 return AT_OK;
+	sensor_t sensor_data;
+	BSP_sensor_Read( &sensor_data );
+	AT_PRINTF("AT%s=%d\r\n", AT_BAT, AD_code3);
+	return AT_OK;
 }
 
 /* Private functions ---------------------------------------------------------*/

@@ -632,7 +632,7 @@ static const struct ATCommand_s ATCommand[] =
 	  .string = AT_BAT,
     .size_string = sizeof(AT_BAT) - 1,
 #ifndef NO_HELP
-    .help_string = "AT"AT_BAT ": Get current battery level\r\n",
+    .help_string = "AT"AT_BAT ": Get current battery level in mV\r\n",
 #endif
     .get = at_bat_get,
     .set = at_return_error,
