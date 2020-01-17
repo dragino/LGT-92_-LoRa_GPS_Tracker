@@ -65,7 +65,7 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "exti_wakeup.h"
 #include "GPS.h"  
 #include "lora.h"
-extern int exti_flag;
+bool button_exitflag=0;
 extern uint32_t MD ;
 extern uint32_t GPS_ALARM;
 extern bool is_lora_joined;
@@ -196,15 +196,8 @@ void SysTick_Handler(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	HW_GPIO_IrqHandler( GPIO_Pin );
-	if (GPIO_Pin == GPIO_PIN_14)
-	{
-      lora_state_INT();
-	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_14);
-	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-		
-	}
-	HW_GPIO_IrqHandler( GPIO_Pin );
-	if (GPIO_Pin == GPIO_PIN_12)
+	
+  if (GPIO_Pin == GPIO_PIN_12)
 	{
 		if(is_lora_joined==1)
 		{
@@ -215,8 +208,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       MPU9250_INT();
 			}
 			}
-	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
-	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 		}
 	}	
 }
@@ -285,20 +276,20 @@ void EXTI4_15_IRQHandler( void )
   
   HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_11 );
 
-//  HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_12 );
  if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_12) != RESET) 
   { 
 	 __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
    HAL_GPIO_EXTI_Callback(GPIO_PIN_12);
-  }
-	
+  }	
 
   HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_13 );
 
-//  HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_14 );
  if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_14) != RESET) 
   { 
-	 exti_flag=1;
+		 if(is_lora_joined==1)
+		{
+			button_exitflag=1;
+		}
 	 __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_14);
    HAL_GPIO_EXTI_Callback(GPIO_PIN_14);
   }

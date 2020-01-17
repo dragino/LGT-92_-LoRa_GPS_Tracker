@@ -24,6 +24,7 @@
 #include "filter.h"
 #include "lora.h"
 #include "flash_eraseprogram.h"
+#include "delay.h"
 
 //static float gyro_offsetx=0.005199,gyro_offsety=0.035498,gyro_offsetz=0.005152;
 float tmp1,tmp2,tmp3;
@@ -53,7 +54,7 @@ uint8_t MPU_Init(void)
     uint8_t res=0;
    
     MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X80);//reset MPU9250
-    HAL_Delay(100);  //—” ±100ms
+    DelayMs(100);  //—” ±100ms
     MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X00);//wake MPU9250
     MPU_Set_Gyro_Fsr(3);					        	//Gyro sensor,°¿2000dps
 	  MPU_Set_Accel_Fsr(2);					       	 	//Acceleration gyro sensor,°¿8g
@@ -62,12 +63,12 @@ uint8_t MPU_Init(void)
 	
 	 MPU_Write_Byte(MPU9250_ADDR,MPU_USER_CTRL_REG,0X00);//I2C Main mode off
 	 MPU_Write_Byte(MPU9250_ADDR,MPU_FIFO_EN_REG,0X00);	// off FIFO
-	 MPU_Write_Byte(MPU9250_ADDR,MPU_INTBP_CFG_REG,0X82);//The INT pin is active low,the bypass mode is enabled,and the magnetometer can be read directly.
+	 MPU_Write_Byte(MPU9250_ADDR,MPU_INTBP_CFG_REG,0X00);//The INT pin is active low,the bypass mode is enabled,and the magnetometer can be read directly.
    res=MPU_Read_Byte(MPU9250_ADDR,MPU_DEVICE_ID_REG);  //Read the ID of MPU9250
     if(res==MPU6500_ID1||res==MPU6500_ID2) //Correct ID
     {
         MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X01);  	//Set CLKSEL,PLL, X axis as reference
-			HAL_Delay(50);
+			DelayMs(50);
         MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X00);  	//Acceleration and gyroscope work
 		MPU_Set_Rate(200);						       	//Set sampling frequency 200Hz   
     }else return 1;
@@ -76,7 +77,7 @@ uint8_t MPU_Init(void)
     if(res==AK8963_ID)
     {
         MPU_Write_Byte(AK8963_ADDR,MAG_CNTL2,0X01);		//Reset AK8963
-		HAL_Delay(50);
+		DelayMs(50);
         MPU_Write_Byte(AK8963_ADDR,MAG_CNTL1,0X11);		//Set AK8963 as a single measurement
 			
     }else return 1;
@@ -124,7 +125,7 @@ void MPU_INT_Init(void)
 	  MPU_Write_Byte(MPU9250_ADDR,MPU_LP_ACCEL_ODR_REG,TF[1]);			
 	}		
 	MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT1_REG,0X20);
-//	HAL_Delay(200);
+//	DelayMs(200);
 }
 //Set the MPU9250 gyro sensor full-scale range
 //fsr:0,°¿250dps;1,°¿500dps;2,°¿1000dps;3,°¿2000dps

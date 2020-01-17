@@ -156,7 +156,7 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef *hrtc)
   __HAL_RCC_RTC_ENABLE();
   
   /*##-3- Configure the NVIC for RTC Alarm ###################################*/
-  HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0x0, 0);
+  HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0x0, 1);
   HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 }
 

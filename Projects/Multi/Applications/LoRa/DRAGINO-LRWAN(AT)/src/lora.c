@@ -58,14 +58,21 @@
 #include "low_power_manager.h"
 #include "version.h"
 #include "mpu9250.h"
+#include "delay.h"
 static uint8_t config_count=0;
 static uint8_t key_count=0;
 
 static uint32_t s_config[32]; //store config
 static uint32_t s_key[32];    //store key
+static uint32_t s_hard[1]; //store hardware version
 
 uint8_t mpuint_flags=0;
+uint8_t ic_version=0;
+uint16_t hardware_version=0;
+float pdop_value;
 
+extern uint8_t se_mode;
+extern uint8_t fr_mode;
 extern uint8_t symbtime1_value;
 extern uint8_t flag1;
 
@@ -92,8 +99,6 @@ extern uint32_t s_timer;
 extern uint8_t Alarm_times;
 
 extern uint8_t Alarm_times1;
-
-extern  uint32_t Alarm_LED ;
 
 extern uint32_t LON ;
 extern uint32_t MD ;
@@ -407,6 +412,7 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
 #endif
 	
 	Read_Config();
+	EEPROM_Read_Config();
 	
 	#if defined(LoRa_Sensor_Node) || defined(AT_Data_Send)
 	
@@ -496,6 +502,7 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
 				Alarm_TX_DUTYCYCLE=60000;
 			  Keep_TX_DUTYCYCLE=3600000;				
 				Positioning_time = 150;
+				pdop_value=3.0;
         gps.flag = 1;	 
         LON =	1;
         MD =1;
@@ -1069,7 +1076,10 @@ void Store_Config(void)
 	
 	s_config[config_count++]=(symbtime1_value<<24)|(flag1<<16)|(symbtime2_value<<8)| flag2;	
 
-	
+	s_config[config_count++]=pdop_value*100;
+
+	s_config[config_count++]=(fr_mode<<8)|(se_mode);
+		
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);//Page800 
 	FLASH_program(FLASH_USER_START_ADDR_CONFIG,s_config,config_count);//store config
 	
@@ -1078,7 +1088,7 @@ void Store_Config(void)
 
 void Read_Config(void)
 {
-	uint32_t star_address=0,r_config[23],r_key[17];
+	uint32_t star_address=0,r_config[25],r_key[17];
 	
 	star_address=FLASH_USER_START_ADDR_KEY;
 	/* read key*/
@@ -1096,7 +1106,7 @@ void Read_Config(void)
 	read_data(8 ,lora_config.AppEui,r_key[15],r_key[16],0,0);
 	
 	star_address=FLASH_USER_START_ADDR_CONFIG;
-	for(int i=0;i<23;i++)
+	for(int i=0;i<25;i++)
 	{
 	  r_config[i]=FLASH_read(star_address);
 		star_address+=4;
@@ -1200,7 +1210,27 @@ void Read_Config(void)
 	symbtime2_value=(r_config[22]>>8)&0xFF;
 	
 	flag2=r_config[22]&0xFF;
+
+	pdop_value=(float)r_config[23]/100;	
+
+	fr_mode=(r_config[24]>>8)&0xFF;
 	
+	se_mode=r_config[24]&0xFF;
+}
+
+void EEPROM_Store_Config(void)
+{
+		s_hard[0]=(ic_version<<16)| hardware_version;
+	  EEPROM_program(EEPROM_IC_HARDWEAR,s_hard,1);//store hardversion	  
+}
+
+void EEPROM_Read_Config(void)
+{
+	uint32_t start_address=0,r_config[1];
+	start_address=EEPROM_IC_HARDWEAR;
+	r_config[0]=*(__IO uint32_t *)start_address;
+	ic_version=r_config[0]>>16;
+	hardware_version=r_config[0]&0xFFFF;
 }
 
 State_t lora_getState( void )
@@ -1220,19 +1250,16 @@ SGM_t LORA_SGM( void )
 
 void lora_state_INT(void)
 {
-
   int in1 = 0;
-	HAL_Delay(3000);
+	DelayMs(3000);
 	in1=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_14);
 	if(in1 == 1)
 	{
 		PRINTF("Enter\n\r");
 		GPS_ALARM =1;
 		GS = 1;
-		Alarm_LED = 0;
+		GPS_POWER_OFF();
 		State = STATE_GPS_SEND;
-		LPM_SetOffMode(LPM_APPLI_Id , LPM_Enable );
-	 	
 	}
 }
 void MPU9250_INT(void)
@@ -1247,13 +1274,11 @@ void MPU9250_INT(void)
 		 {			
 			BSP_sensor_Init();		 
 			LED3_1; 
-			HAL_Delay(500);
+			DelayMs(500);
 			LED3_0;
-			HAL_Delay(500);
+			DelayMs(500);
 		 }	 
-	 }
-	 MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
-	 MPU_INT_Init();
+	 } 
 }
 void lora_state_Led(void)
 {

@@ -31,6 +31,7 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 #include "debug.h"
 #include "LoRaMacTest.h"
 #include "bsp.h"
+#include "delay.h"
 
 extern uint8_t symbtime1_value;
 extern uint8_t flag1;
@@ -2353,9 +2354,9 @@ LoRaMacStatus_t SendFrameOnChannel( uint8_t channel )
 			{
 			BSP_sensor_Init();					
 			LED1_1;
-			HAL_Delay(200);	
+			DelayMs(200);	
 			LED1_0;
-			HAL_Delay(200);				
+			DelayMs(200);				
 			}	
 			}			
     }

@@ -126,9 +126,13 @@ typedef enum eATEerror
 #define AT_MD         "+MD"
 #define AT_KAT        "+KAT"
 #define AT_MLON       "+MLON"
+#define AT_PDOP       "+PDOP"
+#define AT_NMEA353    "+NMEA353"
+#define AT_NMEA886    "+NMEA886"
 #define AT_CFG        "+CFG"
 #define AT_RX1WTO     "+RX1WTO"
 #define AT_RX2WTO     "+RX2WTO"
+#define AT_HWVER      "+HWVER"
 /* Exported functions ------------------------------------------------------- */
 
 /**
@@ -678,6 +682,21 @@ ATEerror_t at_symbtimeout2LSB_get(const char *param);
 
 ATEerror_t at_symbtimeout2LSB_set(const char *param);
 
+ATEerror_t at_hardware_ic_get(const char *param);
+
+ATEerror_t at_hardware_ic_set(const char *param);
+
+ATEerror_t at_PDOP_set(const char *param);
+
+ATEerror_t at_PDOP_get(const char *param);
+
+ATEerror_t at_NMEA353_set(const char *param);
+
+ATEerror_t at_NMEA353_get(const char *param);
+
+ATEerror_t at_NMEA886_set(const char *param);
+
+ATEerror_t at_NMEA886_get(const char *param);
 
 #ifdef __cplusplus
 }

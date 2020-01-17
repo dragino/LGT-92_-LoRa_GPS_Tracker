@@ -117,7 +117,7 @@ static const struct ATCommand_s ATCommand[] =
     .set = at_return_error,
     .run = at_FDR,
   },
-
+	
 #ifndef NO_KEY_ADDR_EUI
   {
     .string = AT_DEUI,
@@ -195,7 +195,7 @@ static const struct ATCommand_s ATCommand[] =
     .run = at_return_error,
   },
 #endif
-  
+
   {
     .string = AT_ADR,
     .size_string = sizeof(AT_ADR) - 1,
@@ -450,7 +450,18 @@ static const struct ATCommand_s ATCommand[] =
     .set = at_return_error,
     .run = at_return_error,
   },
-  
+	
+	{
+	  .string = AT_HWVER,
+    .size_string = sizeof(AT_HWVER) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_HWVER ": Get the LGT92 of hardware version and gps of version\r\n",
+#endif
+    .get = at_hardware_ic_get,
+    .set = at_hardware_ic_set,
+    .run = at_return_error,
+	 },
+    
   {
     .string = AT_CFM,
     .size_string = sizeof(AT_CFM) - 1,
@@ -604,8 +615,40 @@ static const struct ATCommand_s ATCommand[] =
     .set = at_mlon_set,
     .run = at_return_error,
 	},	
-
-
+			
+		{
+	  .string = AT_PDOP,
+    .size_string = sizeof(AT_PDOP) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_PDOP ": Get or set the PDOP value\r\n",
+#endif
+    .get = at_PDOP_get,
+    .set = at_PDOP_set,
+    .run = at_return_error,
+	},
+		
+		{
+	  .string = AT_NMEA353,
+    .size_string = sizeof(AT_NMEA353) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_NMEA353 ": Get or set the search mode of GPS\r\n",
+#endif
+    .get = at_NMEA353_get,
+    .set = at_NMEA353_set,
+    .run = at_return_error,
+	},
+	
+		{
+	  .string = AT_NMEA886,
+    .size_string = sizeof(AT_NMEA886) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_NMEA886 ": Get or set the navigation mode of GPS\r\n",
+#endif
+    .get = at_NMEA886_get,
+    .set = at_NMEA886_set,
+    .run = at_return_error,
+	},
+			
   {
 	  .string = AT_RX1WTO,
     .size_string = sizeof(AT_RX1WTO) - 1,

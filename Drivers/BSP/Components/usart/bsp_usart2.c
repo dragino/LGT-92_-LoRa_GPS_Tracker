@@ -47,7 +47,7 @@ void usart1_Init(void)
     /* Initialization Error */
     //Error_Handler(); 
   } 
-  HAL_NVIC_SetPriority(USART1_IRQn, 0, 1);
+  HAL_NVIC_SetPriority(USART1_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(USART1_IRQn);
 	__HAL_UART_ENABLE_IT(&uart1,UART_IT_RXNE);//??????
 }

@@ -53,7 +53,7 @@ void EXTI4_15_IRQHandler_Config(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 
   /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
-  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 1, 0);
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 }
 /**
