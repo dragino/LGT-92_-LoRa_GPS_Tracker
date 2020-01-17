@@ -628,6 +628,17 @@ static const struct ATCommand_s ATCommand[] =
     .run = at_return_error,
 	 },	
 	
+	 {
+	  .string = AT_BAT,
+    .size_string = sizeof(AT_BAT) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_BAT ": Get current battery level\r\n",
+#endif
+    .get = at_bat_get,
+    .set = at_return_error,
+    .run = at_return_error,
+	 },	
+	
 	#if defined( REGION_US915 ) || defined( REGION_US915_HYBRID ) || defined ( REGION_AU915 ) || defined ( REGION_CN470 )
 	{
 	  .string = AT_CHE,

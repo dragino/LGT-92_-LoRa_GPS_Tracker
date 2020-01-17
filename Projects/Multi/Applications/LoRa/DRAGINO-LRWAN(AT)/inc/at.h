@@ -129,6 +129,7 @@ typedef enum eATEerror
 #define AT_CFG        "+CFG"
 #define AT_RX1WTO     "+RX1WTO"
 #define AT_RX2WTO     "+RX2WTO"
+#define AT_BAT        "+BAT"
 /* Exported functions ------------------------------------------------------- */
 
 /**
@@ -677,6 +678,8 @@ ATEerror_t at_symbtimeout1LSB_set(const char *param);
 ATEerror_t at_symbtimeout2LSB_get(const char *param);
 
 ATEerror_t at_symbtimeout2LSB_set(const char *param);
+
+ATEerror_t at_bat_get(const char *param);
 
 
 #ifdef __cplusplus

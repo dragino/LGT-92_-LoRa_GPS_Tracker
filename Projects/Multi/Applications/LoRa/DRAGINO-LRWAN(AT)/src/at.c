@@ -1545,6 +1545,13 @@ ATEerror_t at_symbtimeout2LSB_set(const char *param)
 	return AT_OK;
 }
 
+ATEerror_t at_bat_get(const char *param)
+{ 
+  PRINTF("AT+BAT="); 
+	print_d(HW_GetBatteryLevel());
+	 return AT_OK;
+}
+
 /* Private functions ---------------------------------------------------------*/
 
 static ATEerror_t translate_status(LoRaMacStatus_t status)
