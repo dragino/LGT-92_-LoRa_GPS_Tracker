@@ -1340,7 +1340,7 @@ static void timing(void)
 				mpuint_flags=0;		
 			}
 			
-			else if(temp_time-start_time>=300000)
+			else if (temp_time-start_time >= APP_TX_DUTYCYCLE)
 			{			
 				APP_TX_DUTYCYCLE=Keep_TX_DUTYCYCLE;								
 				TimerInit( &TxTimer, OnTxTimerEvent );
