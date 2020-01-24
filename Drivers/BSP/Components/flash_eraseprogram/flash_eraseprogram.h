@@ -83,12 +83,14 @@ Maintainer: Miguel Luis and Gregory Cristian
 
 #define FLASH_USER_START_ADDR_KEY      (FLASH_BASE + FLASH_PAGE_SIZE * 802)
 
+#define EEPROM_IC_HARDWEAR  (DATA_EEPROM_BASE+0x04*21)
 	 
 void  FLASH_erase(uint32_t page_address);
 void  FLASH_program(uint32_t add, uint32_t *data, uint8_t count);
 void  FLASH_program_on_addr(uint32_t addr,uint32_t data);
 uint32_t FLASH_read(uint32_t Address);
-	 
+void EEPROM_program(uint32_t add, uint32_t *data, uint8_t count);
+ 
 #ifdef __cplusplus
 }
 #endif

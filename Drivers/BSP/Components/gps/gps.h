@@ -99,6 +99,10 @@ extern void GPS_doinit(void);
 //	BOOL OpenDevice(TCHAR *strPort,int nBaudRate); 
 //	void CloseDevice(); 
 extern  _Bool GPS_IsRunning(void); 
+void send_setting(void);
+void PMTK353(void);
+void PMTK886(void);
+void copytxdata(uint8_t data1[],char *data2);
 /*	BOOL Run(); 
 	void Stop(); 
 	

@@ -59,6 +59,7 @@
 #include "exti_wakeup.h"
 #include "IIC.h"
 #include "mpu9250.h"
+#include "delay.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
@@ -66,7 +67,7 @@
  * CAYENNE_LPP is myDevices Application server.
  */
 //#define CAYENNE_LPP
-#define Firmware    0x02
+#define Firmware    0x03
 #define LPP_DATATYPE_DIGITAL_INPUT  0x0
 #define LPP_DATATYPE_ANOLOG_INPUT   0x02
 #define LPP_DATATYPE_HUMIDITY       0x68
@@ -96,6 +97,7 @@ extern uint32_t MLON ;
 extern uint32_t Threshold ;
 extern uint32_t Freq ;
 extern uint8_t mpuint_flags;
+extern bool button_exitflag;
 
 uint32_t CHE = 0;
 
@@ -143,9 +145,9 @@ uint8_t TDC_flag=0;
  */
 static uint8_t AppDataBuff[LORAWAN_APP_DATA_BUFF_SIZE];
 
-uint32_t Alarm_LED = 0,a = 1;
+uint32_t a = 1;
 
-int exti_flag=0,basic_flag=0;
+int basic_flag=0;
 
 int exti_de=0;
 
@@ -163,7 +165,15 @@ uint8_t stop_flag=0;
 
 uint8_t payloadlens=0;
 
+uint8_t gps_setflags=0;
+
 uint8_t join_flag=0;
+
+uint8_t position_flags=0;
+
+float pdop_comp=7.0;
+
+float pdop_fixed=0.0;
 
 extern uint8_t Alarm_times;
 
@@ -174,6 +184,10 @@ extern uint16_t AD_code3;
 extern uint32_t Positioning_time;
 
 extern uint8_t md_flags;
+
+extern float pdop_value;
+
+extern float pdop_gps;
 
 uint32_t Start_times=0,End_times=0,gps_time = 0;;
 
@@ -245,6 +259,8 @@ static void OnTxTimerEvent2( void );
 static void time(TxEventType_t EventType);
 
 static void timing( void );
+
+static void printf_uplink( void );
 
 extern void printf_joinmessage(void);
 #endif
@@ -363,7 +379,9 @@ int main( void )
 			MPU_INT_Init();		
       md_flags=0;			
 		}
-			
+
+		send_exti();
+		
 		lora_send();
 
 		if((motion_flags==1)&&(mpuint_flags==1))
@@ -389,7 +407,6 @@ int main( void )
      * don't go in low power mode if we just received a char
      */
 #ifndef LOW_POWER_DISABLE
-//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
     LPM_EnterLowPower();
 #endif
     ENABLE_IRQ();
@@ -401,12 +418,12 @@ int main( void )
 
 static void LORA_HasJoined( void )
 {
-  AT_PRINTF("JOINED\n\r");
+  PPRINTF("JOINED\r\n");
 
 	BSP_sensor_Init();
 	LED3_1;
 	LED1_1;  	
-	HAL_Delay(1000);
+	DelayMs(1000);
 	LED3_0;
 	LED1_0; 
 	
@@ -425,6 +442,11 @@ static void LORA_HasJoined( void )
 	  Alarm_TX_DUTYCYCLE=60000;	
 	  Keep_TX_DUTYCYCLE=3600000;					
 	}
+
+  if(pdop_value==0.0)
+  {
+		 pdop_value=3.0;
+	}		
 	
   LORA_RequestClass( LORAWAN_DEFAULT_CLASS );
 	
@@ -442,6 +464,88 @@ static void LORA_HasJoined( void )
 	#if defined(AT_Data_Send)     /*LoRa ST Module*/
 	AT_PRINTF("Please using AT+SEND or AT+SENDB to send you data!\n\r");
 	#endif
+}
+
+static void printf_uplink( void )
+{
+	if(gps_latitude > 0 && gps_longitude > 0)			
+ 	{
+	 gps_state_on();
+	 TimerTime_t ts = TimerGetCurrentTime(); 
+	 PPRINTF("\n\r[%lu]", ts); 	
+	 PPRINTF("Roll=%0.2f  ",((int)(Roll1*100))/100.0);
+	 PPRINTF("Pitch=%0.2f\n\r",((int)(Pitch1*100))/100.0);
+	 DelayMs(50);
+//	 PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
+//	 PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
+   
+	 if(gps.latNS != 'N')
+	 {
+	   latitude = gps_latitude*1000000;
+	   latitude = (~latitude) ;
+     gps_latitude = (float)(latitude)/1000000;	 
+		 TimerTime_t ts = TimerGetCurrentTime(); 
+		 PPRINTF("[%lu]", ts); 	
+     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
+	   DelayMs(100);
+	 }
+	 else
+	 {
+		latitude = gps_latitude*1000000;
+		TimerTime_t ts = TimerGetCurrentTime(); 
+		PPRINTF("[%lu]", ts); 	
+    PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		
+	  DelayMs(100);		 
+	 }
+	 if(gps.lgtEW != 'E')
+	 {
+	   longitude = gps_longitude*1000000;	 
+	   longitude = (~longitude) ;
+		 gps_longitude = (float)(longitude)/1000000;
+		 TimerTime_t ts = TimerGetCurrentTime(); 
+		 PPRINTF("[%lu]", ts); 	
+     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);
+	   DelayMs(100);			 
+	 }
+	 else
+	 {
+		 longitude = gps_longitude*1000000; 	
+		 TimerTime_t ts = TimerGetCurrentTime(); 
+		 PPRINTF("[%lu]", ts); 	
+     PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);	
+	   DelayMs(100);			 
+	 }
+	 TimerTime_t ts2 = TimerGetCurrentTime(); 
+	 PPRINTF("[%lu]", ts2);  
+	 if(pdop_fixed!=0.0)
+	 {	 
+			PPRINTF("PDOP is %.2f\n\r",pdop_fixed);	
+	 }
+	 else if(pdop_comp!=7.0)
+	 {
+		  PPRINTF("PDOP is %.2f\n\r",pdop_comp);	
+	 }	
+	 pdop_fixed=0.0;
+	 pdop_comp=7.0;	 
+	 DelayMs(50);	
+   gps.latitude = 0;
+   gps.longitude = 0;		
+   gps_latitude = 0;
+   gps_longitude = 0;	
+	}	
+	else
+	{
+	 TimerTime_t ts = TimerGetCurrentTime(); 
+	 PPRINTF("\n\r[%lu]", ts); 	
+	 PPRINTF("GPS NO FIX\n\r");			
+	}
+  if((Alarm_times1<=60)&&(GPS_ALARM == 1)&&(GS == 0))
+  {
+	 TimerTime_t ts = TimerGetCurrentTime(); 
+	 PPRINTF("[%lu]", ts); 			
+	 PPRINTF("send NO.%d Alarm data \n\r",Alarm_times);		
+	}	
+   DelayMs(100);	
 }
 
 static void Send( void )
@@ -480,6 +584,7 @@ static void Send( void )
 	{
 		LP = 0;
 	}
+
 	  MPU_Write_Byte(MPU9250_ADDR,0x6B,0X00);//唤醒
 	  MPU_Init();
 //    MPU_Write_Byte(MPU9250_ADDR,MPU_PWR_MGMT2_REG,0X00);  	//加速度与陀螺仪都工作
@@ -551,46 +656,8 @@ static void Send( void )
 	Roll_sum=0;
 	Pitch_sum=0;
 	
-	if(gps.latitude > 0 && gps.longitude > 0)		
- 	{
-	 gps_state_on();
-	 PPRINTF("\n\rRoll=%0.2f  ",((int)(Roll1*100))/100.0);
-	 PPRINTF("Pitch=%0.2f\n\r",((int)(Pitch1*100))/100.0);
-//	 PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
-//	 PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
-   
-	 if(gps.latNS != 'N')
-	 {
-	   latitude = gps_latitude*1000000;
-	   latitude = (~latitude) ;
-     gps_latitude = (float)(latitude)/1000000;	 
-     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
-	 }
-	 else
-	 {
-		latitude = gps_latitude*1000000;
-    PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
-	 }
-	 if(gps.lgtEW != 'E')
-	 {
-	   longitude = gps_longitude*1000000;	 
-	   longitude = (~longitude) ;
-		 gps_longitude = (float)(longitude)/1000000;
-     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);		 
-	 }
-	 else
-	 {
-		 longitude = gps_longitude*1000000; 	
-     PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);		 
-	 }
-   gps.latitude = 0;
-   gps.longitude = 0;		
-	}	
-	else
-	{
-	PPRINTF("\r\n");
-	PPRINTF("GPS NO FIX\n\r");			
-	}
+	printf_uplink();
+	
   FLAG = (int)(MD<<6 | LON<<5 | Firmware )& 0xFF;
 //	PRINTF("\n\rFLAG=%d  ",FLAG);
 	AppData.Port = LORAWAN_APP_PORT;
@@ -618,8 +685,6 @@ static void Send( void )
 		 }
 		else
 		{
-
-
 			  AppData.Buff[i++] =(int)latitude>>24& 0xFF;
 			  AppData.Buff[i++] =(int)latitude>>16& 0xFF;
 			  AppData.Buff[i++] =(int)latitude>>8& 0xFF;
@@ -665,6 +730,7 @@ static void Send( void )
 		}		
 
 	 gps.flag = 1;
+	 gps_setflags=0;			
 	 AppData.BuffSize = i;
 	 payloadlens=i;		 
    LORA_send( &AppData, lora_config_reqack_get());
@@ -705,7 +771,7 @@ static void LORA_RxData( lora_AppData_t *AppData )
 						{
 							BSP_sensor_Init();
 							LED0_1;						
-		          HAL_Delay(1000);	
+		          DelayMs(1000);	
 						}	
 						  LED0_0;
 					}
@@ -727,7 +793,7 @@ static void LORA_RxData( lora_AppData_t *AppData )
 							 {	 
 							  BSP_sensor_Init();									 
 						    LED1_1;							 
-						    HAL_Delay(1000);	
+						    DelayMs(1000);	
 							 }	
 							  LED1_0;
 							 PRINTF("Exit Alarm\r\n");
@@ -971,26 +1037,56 @@ static void LORA_ConfirmClass ( DeviceClass_t Class )
 void lora_send(void)
 {
   switch(lora_getState())
-  {
-		
+  {	
 		case STATE_LED:
 		{
 		  gps.flag = 1;
 			stop_flag=1;
+			if(Positioning_time!=0)
+			{
 			GPS_POWER_OFF();
-			LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );		
+		  LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );				
+			}
 			break;
 		}
 		case  STATE_GPS_SEND:
 		{	
       stop_flag=0;
+			__HAL_UART_ENABLE_IT(&uart1,UART_IT_RXNE);				
 			if(gps.GSA_mode2 == 3)		
   		{
 				if(gps.latitude > 0 && gps.longitude > 0)
 				{	
-					gps_latitude = gps.latitude;
-					gps_longitude = gps.longitude;						
-				  SendData = 1;
+					if((pdop_value>=pdop_gps)&&(pdop_gps!=0.0))
+					{	
+						gps_latitude = gps.latitude;
+						gps_longitude = gps.longitude;	
+					  pdop_fixed=pdop_gps;	 						
+						SendData = 1;
+						if(Positioning_time!=0)
+						{	
+							GPS_POWER_OFF();
+						}
+						__HAL_UART_DISABLE_IT(&uart1,UART_IT_RXNE);
+					}
+					else if(pdop_value<pdop_gps)
+					{
+						if((pdop_gps<pdop_comp)&&(pdop_gps!=0.0))
+						{
+							gps_latitude = gps.latitude;
+							gps_longitude = gps.longitude;
+							pdop_comp=pdop_gps;						
+						}							
+					}
+					if((((Positioning_time!=0)&&(End_times >=Positioning_time))||((Positioning_time==0)&&(End_times >=150)))&&(gps_latitude > 0 && gps_longitude > 0))
+					{
+						SendData = 1;	
+						if(Positioning_time!=0)
+						{	
+							GPS_POWER_OFF();
+						}
+						__HAL_UART_DISABLE_IT(&uart1,UART_IT_RXNE);						
+					}	
 				}
 			}	
 							
@@ -998,127 +1094,88 @@ void lora_send(void)
 			{				
 			 if(GPS_ALARM == 0)
 				{
-				  gps_state_on();						
-					send_data();						
-			    a = 1;
-					GPS_ALARM = 0;
-          SendData = 0;	
+				  gps_state_on();	
 					if(LON == 1)
 					{
 					 LED1_1; 						
-					 HAL_Delay(200);
+					 DelayMs(200);
 					 LED1_0;
-				   HAL_Delay(200);	
-					}							
+				   DelayMs(200);	
+					}						
+					send_data();						
+			    a = 1;
+					GPS_ALARM = 0;
+          SendData = 0;							
 				}
-				if(GPS_ALARM == 1)
+				else if(GPS_ALARM == 1)
 				{
-				 if(Alarm_times < 60)
+				 if(Alarm_times <= 60)
 				 {			 
-					 gps_state_on();		 
-					 send_ALARM_data();							 
+					 gps_state_on();
+					 if(LON == 1)
+					 {				 
+						LED3_1;
+						DelayMs(1000);				 
+					 }	
+					 LED3_0;					 
+					 send_ALARM_data();								 
            a = 100;		
            GPS_ALARM = 1;
-           SendData = 0;						 
-           PPRINTF("send Alarm data \n\r");					 
+           SendData = 0;						 			 
 				 }
 				 if(Alarm_times1 == 60)
 				 {
 					 start_time=HW_RTC_GetTimerValue();							 
 					 ALARM = 0;					 
-					 Alarm_LED = 0;
            GPS_ALARM = 0;						  			 
 					 if(LON == 1)
 						 {
 					    BSP_sensor_Init();								 
 					    LED1_1;							 
-					    HAL_Delay(1000);	
+					    DelayMs(1000);	
 						 }
 					    LED1_0;
-					 PPRINTF("Exit Alarm\r\n");
-					 DISABLE_IRQ( );
-				/*
-				 * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
-				 * and cortex will not enter low power anyway
-				 * don't go in low power mode if we just received a char
-				 */
-#ifndef LOW_POWER_DISABLE
-//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
-		LPM_EnterLowPower();
-#endif
-					 ENABLE_IRQ();			 
+					 PPRINTF("Exit Alarm\r\n");	 
 				 }	
 				}
 		  }	
 			
 			if(LP == 0)
 			{
-				LPM_SetOffMode(LPM_APPLI_Id , LPM_Enable );
+			  LPM_SetOffMode(LPM_APPLI_Id ,LPM_Enable );
 				BSP_sensor_Init();		
 				if(GS == 1)
 				{			
 					ALARM = 1;	
-					gps_state_off();				
-					gps.latitude = 0;
-					gps.longitude = 0;						
-			    APP_TX_DUTYCYCLE = Server_TX_DUTYCYCLE;
-			    TimerInit( &TxTimer, OnTxTimerEvent );
-	        TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
-	        Send( );	
-			    TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
-          /*Wait for next tx slot*/
-          TimerStart( &TxTimer);					
+					gps_state_off();					
+	        Send( );
+					LED3_1;	
+					DelayMs(5000);
+					LED3_0;			
 					GS = 0;
-					gps_time = 0;
+					gps_time = 0;			
+					Alarm_times1 = 1;	
+					Alarm_times = 1; 	
 				}
 				
-					if(GPS_ALARM == 1)
-					{
-						if(Alarm_LED == 0)
-					{
-						gps.flag = 1;
-						gps.GSA_mode2 = 0;
-						ALARM = 1;						
-						Alarm_times1 = 0;
-						Alarm_times = 60;
-						GPS_POWER_OFF();
-						BSP_sensor_Init();
-						PPRINTF("\n\r");	
-					}
-					if( Alarm_LED < 60)
-					 { 
-						GPS_POWER_OFF();
-						alarm_flags=1;
-						LED3_1; 
-						HAL_Delay(500);
-						LED3_0;
-					  HAL_Delay(500);
-						Alarm_LED ++; 
-						GPS_ALARM = 1;
-						PPRINTF("Alarm_LED:%d\n\r",Alarm_LED);	
-					 }
-					 if( Alarm_LED == 60)
-					 {
-						alarm_flags=0;
-						Alarm_times = 0; 
-						GPS_ALARM = 1;						 
-					 }
-				  }	
-				
-        if(alarm_flags==0)	
-				{					
 			  POWER_ON();
 			  GPS_INPUT();
 			  Start_times ++;
-				}
 				LP = 0;
 				LED0_0;							
 			}
 					
-			if(LP == 1)
+			else if(LP == 1)
       {
 				gps_state_no();
-			  APP_TX_DUTYCYCLE = Server_TX_DUTYCYCLE;
+			  if(motion_flags==1)
+			  {
+				 APP_TX_DUTYCYCLE = Keep_TX_DUTYCYCLE;
+			  }		
+			  else	
+			  {							
+				  APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
+			  }
 			  TimerInit( &TxTimer, OnTxTimerEvent );
 	      TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
 	      Send( );	
@@ -1127,10 +1184,28 @@ void lora_send(void)
         TimerStart( &TxTimer);
 				TimerStart( &TxTimer2);					
 			  LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
+				if( MD == 0)
+				{
+					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
+				}
+				else
+				{
+					MPU_INT_Init();
+				}					
 			  PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);		
         PPRINTF("LP == 1\n\r");				
 		    lora_state_Led();
 				a = 1;
+			  DISABLE_IRQ( );
+				/*
+				 * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
+				 * and cortex will not enter low power anyway
+				 * don't go in low power mode if we just received a char
+				 */
+#ifndef LOW_POWER_DISABLE
+		LPM_EnterLowPower();
+#endif
+					 ENABLE_IRQ();						
 			}	
 			
 				if(Start_times == TIMES)
@@ -1143,87 +1218,89 @@ void lora_send(void)
 					  LED0_1;
 				   }
 					TIMES = 10000;
-					HAL_Delay(200);
+					DelayMs(200);
 				}
 				
-				if(End_times <= Positioning_time)
+				if((End_times <= Positioning_time)||(Positioning_time==0))
 				{
 					if(gps_time == 30 )
 					{
 						PPRINTF("\r\n");
 						PPRINTF("Fix Time:%d s \n\r",End_times); 
-						PPRINTF("Fix Timeout (FTIME):%d s \n\r",Positioning_time);
+            if(Positioning_time!=0)
+						{							
+							PPRINTF("Fix Timeout (FTIME):%d s \n\r",Positioning_time);
+						}
 						gps_time = 0;
 					}
        	}	
 				
-			  if(End_times >=Positioning_time)
+				if((position_flags==0)&&(((Positioning_time!=0)&&(End_times >=Positioning_time))||((Positioning_time==0)&&(End_times >=150))))
 				{
 				  send_fail=1;	
+					if(Positioning_time!=0)
+					{	
+						GPS_POWER_OFF();
+					}
+					__HAL_UART_DISABLE_IT(&uart1,UART_IT_RXNE);
 					if(GPS_ALARM == 0)
 					{
 						 LED3_0;
 						 LED1_0;
 						 LED0_0;
 						 gps_state_off();	
-             a = 100;						
-						 send_data();
-						 GPS_ALARM = 0;	
+             a = 100;	
              if(LON == 1)
              {									 
 						   LED3_1; 							 
-						   HAL_Delay(200);
+						   DelayMs(200);
 						   LED3_0;
-						   HAL_Delay(200);
+						   DelayMs(200);
 							 LED3_1; 							 
-						   HAL_Delay(200);
+						   DelayMs(200);
 						   LED3_0;
-						   HAL_Delay(200);
-						 }	 
+						   DelayMs(200);
+						 }							
+						 send_data();
+						 GPS_ALARM = 0;	 
 					}
-					if(GPS_ALARM == 1)
+					else if(GPS_ALARM == 1)
 					{
-					 if(Alarm_times < 60)
+					 if(Alarm_times <= 60)
 					 {
 						 LED3_0;
 						 LED1_0;
 						 LED0_0;
+						 if(LON == 1)
+					   {				 
+							LED3_1;
+						  DelayMs(1000);				 
+					   }
+					   LED3_0;						 
 						 gps_state_off();	
-						 send_ALARM_data();
+						 send_ALARM_data();	
 						 GPS_ALARM = 1;
 						 a = 100;	
-						 SendData = 0;
-						 PPRINTF("send Alarm data \n\r");									 
+						 SendData = 0;							 
 					 }
 					 if(Alarm_times1 == 60)
 					 {
 						 start_time=HW_RTC_GetTimerValue();		
 						 ALARM = 0;
-						 Alarm_LED = 0;
 						 GPS_ALARM = 0;							 
 						 if(LON == 1)
 						 {
 							BSP_sensor_Init();								 
 						  LED1_1;						 
-						  HAL_Delay(1000);	
+						  DelayMs(1000);	
 						 }								 
 						  LED1_0;
-					   PPRINTF("Exit Alarm\r\n");						 
-						 DISABLE_IRQ( );
-					/*
-					 * if an interrupt has occurred after DISABLE_IRQ, it is kept pending
-					 * and cortex will not enter low power anyway
-					 * don't go in low power mode if we just received a char
-					 */
-#ifndef LOW_POWER_DISABLE
-//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
-		LPM_EnterLowPower();
-#endif
-						 ENABLE_IRQ();			 
+					   PPRINTF("Exit Alarm\r\n");						 		 
 					 }	
 					}	
       	 send_fail=0;				
 			 }
+			position_flags=0;	
 		 break;
 		}
 		default:
@@ -1240,11 +1317,11 @@ void send_data(void)
 			 if(motion_flags==1)
 			 {
 				 APP_TX_DUTYCYCLE = Keep_TX_DUTYCYCLE;
-				}		
-				else	
-				{							
+			 }		
+			 else	
+			 {							
 				  APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
-				}
+			 }
 			 TimerInit( &TxTimer, OnTxTimerEvent );
 	     TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
 	     Send( );	
@@ -1276,10 +1353,15 @@ void send_data(void)
      * don't go in low power mode if we just received a char
      */
 #ifndef LOW_POWER_DISABLE
-//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
     LPM_EnterLowPower();
 #endif
     ENABLE_IRQ();	
+			 
+		if(Positioning_time==0)
+		{
+		DelayMs(2000);
+		LPM_SetOffMode(LPM_APPLI_Id ,LPM_Enable );			
+		}
 }
 
 void send_ALARM_data(void)
@@ -1291,16 +1373,9 @@ void send_ALARM_data(void)
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
        /*Wait for next tx slot*/
        TimerStart( &TxTimer);		
-			 LPM_SetOffMode(LPM_APPLI_Id , LPM_Enable );
+			 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
 			 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
-			 if( MD == 0)
-			 {
-					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
-			 }
-			 else
-			 {
-					MPU_INT_Init();
-			 }	
+		   MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep	
        lora_state_Led();
 			 BSP_sensor_Init();
 			 End_times = 0 ;
@@ -1308,12 +1383,6 @@ void send_ALARM_data(void)
 	     LED0_0;
 	     a = 100;
 			 gps.GSA_mode2 = 0;
-       if(LON == 1)
-			 {				 
-		  	 LED3_1;
-			   HAL_Delay(1000);				 
-			 }
-			   LED3_0;
 	 	
        DISABLE_IRQ( );
     /*
@@ -1322,10 +1391,15 @@ void send_ALARM_data(void)
      * don't go in low power mode if we just received a char
      */
 #ifndef LOW_POWER_DISABLE
-//		MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
     LPM_EnterLowPower();
 #endif
     ENABLE_IRQ();	
+		
+		if(Positioning_time==0)
+		{
+		DelayMs(2000);
+		LPM_SetOffMode(LPM_APPLI_Id ,LPM_Enable );			
+		}
 }
 
 /*
@@ -1557,7 +1631,7 @@ void CalibrateToZero(void)
 			MPU_Get_Mag(&imx,&imy,&imz,&mx,&my,&mz);
 			AHRSupdate(gx,gy,gz,ax,ay,az,mx,my,mz,&roll,&pitch,&yaw);				
 //			delay_us(6430);
-				HAL_Delay(7);
+				DelayMs(7);
 				if (t>=100)
 				{
 					sumpitch+=pitch;
@@ -1578,5 +1652,14 @@ void CalibrateToZero(void)
 void USART1_IRQHandler(void)
 {
 	usart1_IRQHandler(&uart1);
+}
+
+void send_exti(void)
+{
+	 if(button_exitflag==1)
+	 {
+		 lora_state_INT();
+		 button_exitflag=0;
+	 }
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -51,6 +51,7 @@
 #include "timeServer.h"
 #include "bsp.h"
 #include "lora.h"
+#include "delay.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -148,7 +149,7 @@ void powerLED(void)
 
 	BSP_powerLED_Init();
 	LED0_1 ;
-	HAL_Delay(2000);
+	DelayMs(2000);
   LED0_0;
 
 }

@@ -31,6 +31,7 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 #include "debug.h"
 #include "LoRaMacTest.h"
 #include "bsp.h"
+#include "delay.h"
 
 extern uint8_t symbtime1_value;
 extern uint8_t flag1;
@@ -40,6 +41,9 @@ extern uint8_t send_fail;
 extern uint32_t LON ;
 extern uint32_t GPS_ALARM;
 extern uint32_t GS;
+extern uint8_t TXpower;
+extern int8_t TXdr;
+extern uint8_t nbreq;
 /*!
  * Maximum PHY layer payload size
  */
@@ -1792,6 +1796,25 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                         LoRaMacParams.ChannelsDatarate = linkAdrDatarate;
                         LoRaMacParams.ChannelsTxPower = linkAdrTxPower;
                         LoRaMacParams.ChannelsNbRep = linkAdrNbRep;
+												PPRINTF("\r\n");											
+												PPRINTF("ADR Message:\r\n");	
+											  #if defined ( REGION_US915 ) || defined ( REGION_AU915 )|| defined ( REGION_CN470 )
+												PPRINTF("ChannelsMask change to ");	
+
+												MibRequestConfirm_t mib;
+												mib.Type = MIB_CHANNELS_MASK;
+												LoRaMacMibGetRequestConfirm(&mib);
+
+												for(int i=0;i<6;i++)
+												{
+													PPRINTF("%04x ",mib.Param.ChannelsMask[i]);	
+												}		
+												PPRINTF("\r\n");
+												#endif											
+												PPRINTF("TX Datarate %d change to %d\r\n",TXdr,linkAdrDatarate);
+												PPRINTF("TxPower %d change to %d\r\n",TXpower,linkAdrTxPower);
+												PPRINTF("NbRep %d change to %d\r\n",nbreq,linkAdrNbRep);		
+												PPRINTF("\r\n");			
                     }
 
                     // Add the answers to the buffer
@@ -2353,9 +2376,9 @@ LoRaMacStatus_t SendFrameOnChannel( uint8_t channel )
 			{
 			BSP_sensor_Init();					
 			LED1_1;
-			HAL_Delay(200);	
+			DelayMs(200);	
 			LED1_0;
-			HAL_Delay(200);				
+			DelayMs(200);				
 			}	
 			}			
     }

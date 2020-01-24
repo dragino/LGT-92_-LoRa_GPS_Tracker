@@ -1,6 +1,7 @@
 #include "GPS.h"  
 #include "at.h"  
 #include "vcom.h"
+#include "delay.h"
 #define SEMICOLON   ','    
 #define ASTERISK    '*'    
   
@@ -14,7 +15,15 @@
   _Bool isrunning; 
   uint32_t   isFirmwareUpdate = 0; 
 	int count =0;
-
+	uint8_t gpspower_flag=0;
+	float pdop_gps;
+	char *txdata353;
+  char *txdata886;
+extern UART_HandleTypeDef uart1;
+extern uint8_t gps_setflags;
+extern uint8_t se_mode;
+extern uint8_t fr_mode;
+extern uint8_t ic_version;
 
 _Bool GPS_Run(void)   
 {   
@@ -458,6 +467,12 @@ uint8_t GPS_parse(char *buf)
     left=word;   
    
     word=split(left,SEMICOLON,&left); 
+    if(!strcmp(word,"PMTK001"))   
+    { 
+			gps_setflags=1;
+			gpspower_flag=0;			
+		}				
+		
     if(!strcmp(word,"GNRRMC"))   
     {   
         //时间戳  
@@ -657,7 +672,7 @@ uint8_t GPS_parse(char *buf)
           sscanf(word,"%2d%2d%2d",&gps.DD,&gps.MM,&gps.YY);    
         }  
     } 
-    else if(!strcmp(word,"GPGGA"))   
+    else if((!strcmp(word,"GPGGA")) || (!strcmp(word,"GNGGA")))
     {   
         //时间戳  
 //        AT_PRINTF("GPGGA:%s\n\r",word);			
@@ -838,7 +853,7 @@ uint8_t GPS_parse(char *buf)
         if(msgid == msgcount )   
           ;   
     }   
-    else if(!strcmp(word,"GPGSA"))   
+    else if((!strcmp(word,"GPGSA"))||(!strcmp(word,"GNGSA")))     
     {   
 //			  AT_PRINTF("GPGSA:%s\n\r",word);
         //定位模式1    
@@ -875,6 +890,7 @@ uint8_t GPS_parse(char *buf)
         if(word != NULL)   
         {   
             gps.PDOP=(float)my_atof(word);   
+            pdop_gps=	gps.PDOP;							
         }   
    
         //水平精度值    
@@ -893,61 +909,7 @@ uint8_t GPS_parse(char *buf)
             gps.VDOP=(float)my_atof(word);   
         }       
     }  
-    else if(!strcmp(word,"GNGSA"))   
-    {   
-        //定位模式1 
-//        AT_PRINTF("GNGSA:%s\n\r",word);			
-        word=split(left,SEMICOLON,&left);
-//        AT_PRINTF("GNGSA1:%s\n\r",word);				
-        if(word != NULL)   
-        {   
-            gps.GSA_mode1=my_atoi(word);   
-        }   
-   
-        //定位模式2    
-        word=split(left,SEMICOLON,&left);
-//        AT_PRINTF("GNGSA2:%s\n\r",word);				
-        if(word != NULL)   
-        {   
-            gps.GSA_mode2=my_atoi(word);   
-        }   
-   
 
-          
-        for(i=0;i<12;i++)   
-        {   
-            word=split(left,SEMICOLON,&left);   
-            if(word != NULL)   
-            {   
-                gps.usedsat[i]=my_atoi(word);   
-                usedsatcount++;   
-            }   
-        }   
-   
-        //位置精度值    
-        word=split(left,SEMICOLON,&left); 
-//        AT_PRINTF("GNGSA3:%s\n\r",word);				
-        if(word != NULL)   
-        {   
-            gps.PDOP=(float)my_atof(word);   
-        }   
-   
-        //水平精度值    
-        word=split(left,SEMICOLON,&left); 
-//        AT_PRINTF("GNGSA4:%s\n\r",word);				
-        if(word != NULL)   
-        {   
-            gps.HDOP=(float)my_atof(word);   
-        }   
-   
-        //高度精度值    
-        word=split(left,SEMICOLON,&left); 
-//        AT_PRINTF("GNGSA5:%s\n\r",word);				
-        if(word != NULL)   
-        {   
-            gps.VDOP=(float)my_atof(word);   
-        }       
-    }     
     if(gps.latitude > 90.0)
       gps.latitude = 0.0;
 
@@ -1131,8 +1093,99 @@ void POWER_ON()
 {
    GPS_init();
 	 GPS_POWER_ON();
+	 if((ic_version<=1)&&((se_mode!=0)||(fr_mode!=0)))
+   {		
+		if(gps_setflags==0)
+		{
+			send_setting(); 
+			gpspower_flag++;
+			if(gpspower_flag==30)
+			{
+				gps_setflags=1;
+				gpspower_flag=0;
+			}
+		}
+	 }
 }
 void POWER_OFF()
 {
 	 GPS_POWER_OFF();
+}
+
+void send_setting(void)
+{
+	 uint8_t txdata1[25];
+	 uint8_t txdata2[17];
+
+	 if((ic_version==1)&&(se_mode!=0))
+	 { 
+	 PMTK353();
+	 copytxdata(txdata1,txdata353);
+	 HAL_UART_Transmit(&uart1, txdata1, 25, 0xFFFF);  //Set search mode
+	 DelayMs(50); 
+	 }
+	 
+	 if(fr_mode!=0)
+	 {
+	 PMTK886();	
+	 copytxdata(txdata2,txdata886);		 
+	 HAL_UART_Transmit(&uart1, txdata2, 17, 0xFFFF);  //Set fr mode
+	 DelayMs(50);
+	 }		 
+}
+
+void PMTK353(void)
+{
+  if(se_mode==1)
+	{
+		txdata353="$PMTK353,1,1,0,0,0*2B\r\n";
+	}
+  else if(se_mode==2)	
+	{
+		txdata353="$PMTK353,1,0,0,0,1*2B\r\n";		
+	}
+	else if(se_mode==3)
+	{
+		txdata353="$PMTK353,1,0,1,0,0*2B\r\n";				
+	}
+	else if(se_mode==4)
+	{
+		txdata353="$PMTK353,1,1,1,0,0*2A\r\n";	
+	}	
+}
+
+void PMTK886(void)
+{
+  if(fr_mode==1)
+	{
+		txdata886="$PMTK886,0*28\r\n";
+	}
+  else if(fr_mode==2)	
+	{
+		txdata886="$PMTK886,1*29\r\n";
+	}
+	else if(fr_mode==3)
+	{
+		txdata886="$PMTK886,2*2A\r\n";		
+	}
+	else if(fr_mode==4)
+	{
+		txdata886="$PMTK886,3*2B\r\n";
+	}
+	else if(fr_mode==5)
+	{
+		txdata886="$PMTK886,4*2C\r\n";		
+	}	
+}
+
+void copytxdata(uint8_t data1[],char *data2)
+{
+	char data3[40];
+	strcpy(data3,data2);
+	for(int i=0;i<(strlen(data3));i++)
+	{
+		data1[i]=data3[i];
+	}
+	data1[strlen(data3)]='\\';
+	data1[strlen(data3)+1]='n';		
 }

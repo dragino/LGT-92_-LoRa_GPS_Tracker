@@ -81,6 +81,15 @@ extern uint32_t start_time;
 
 extern uint16_t AD_code3;
 
+extern uint8_t ic_version;
+
+extern uint16_t hardware_version;
+
+extern float pdop_value;
+
+uint8_t se_mode=0;
+uint8_t fr_mode=0;
+
 uint32_t Positioning_time = 150;
 
 uint32_t set_sgm = 0;
@@ -371,6 +380,54 @@ ATEerror_t at_AppSKey_set(const char *param)
   return AT_OK;
 }
 
+
+ATEerror_t at_hardware_ic_get(const char *param)
+{
+	if((hardware_version==0)&&(ic_version==0))
+	{
+		PPRINTF("L70-RL\r\n");
+	}
+	else if(ic_version==0)
+	{
+		PPRINTF("v%d.%d.%d,L70-RL\r\n",hardware_version/100,(hardware_version/10)%10,hardware_version%10);		
+	}
+	else if(ic_version==1)
+	{
+		PPRINTF("v%d.%d.%d,L76-L\r\n",hardware_version/100,(hardware_version/10)%10,hardware_version%10);				
+	}
+  else if(ic_version==2)	
+	{
+		PPRINTF("v%d.%d.%d,ublox-MAX7\r\n",hardware_version/100,(hardware_version/10)%10,hardware_version%10);					
+	}
+  else if(ic_version==3)	
+	{
+		PPRINTF("v%d.%d.%d,ublox-MAX8\r\n",hardware_version/100,(hardware_version/10)%10,hardware_version%10);					
+	}
+	
+	return AT_OK;	
+}
+
+ATEerror_t at_hardware_ic_set(const char *param)
+{
+	uint8_t ic;
+	uint16_t hardware;
+	if (tiny_sscanf(param, "%d,%d", &hardware,&ic) != 2)
+  {
+    return AT_PARAM_ERROR;
+  }	
+
+  if((hardware<150)||(ic>9))
+	{
+    return AT_PARAM_ERROR;		
+	}	
+	
+	ic_version=ic;
+	hardware_version=hardware;
+	
+	EEPROM_Store_Config();
+	
+	return AT_OK;
+}
 //ATEerror_t at_NwkSKey_get(const char *param)
 //{
 //  MibRequestConfirm_t mib;
@@ -561,7 +618,7 @@ ATEerror_t at_DataRate_set(const char *param)
 	  if(datarate>=8)
 		{
     return AT_PARAM_ERROR;			
-		};
+		}
 #elif defined( REGION_KR920 )
 	  if(datarate>=6)
 		{
@@ -576,7 +633,7 @@ ATEerror_t at_DataRate_set(const char *param)
 	  if(datarate>=8)
 		{
     return AT_PARAM_ERROR;			
-		};
+		}
 #endif
 	
   lora_config_tx_datarate_set(datarate) ;
@@ -1554,6 +1611,101 @@ ATEerror_t at_bat_get(const char *param)
 	BSP_sensor_Read( &sensor_data );
 	AT_PRINTF("AT%s=%d\r\n", AT_BAT, AD_code3);
 	return AT_OK;
+}
+
+ATEerror_t at_PDOP_set(const char *param)
+{
+	uint16_t gapvalue_a;
+	uint8_t  gapvalue_b;
+	
+	if (tiny_sscanf(param, "%d.%d", &gapvalue_a,&gapvalue_b) != 2)
+  {
+    return AT_PARAM_ERROR;
+  }	
+	
+	if(gapvalue_b>=100)
+  {
+    return AT_PARAM_ERROR;
+  }	
+	
+	if(gapvalue_b<=9)
+	{
+	pdop_value=gapvalue_a+((float)gapvalue_b/10.0);		
+	}
+	else
+	{
+	pdop_value=gapvalue_a+((float)gapvalue_b/100.0);
+	}
+	
+  return AT_OK;	
+}
+
+ATEerror_t at_PDOP_get(const char *param)
+{
+	PPRINTF("%.2f\r\n",pdop_value);
+	
+  return AT_OK;		
+}
+
+ATEerror_t at_NMEA353_set(const char *param)
+{
+	uint8_t se_mode1;
+	
+	if (tiny_sscanf(param, "%d", &se_mode1) != 1)	
+	{
+    return AT_PARAM_ERROR;		
+	}	
+	
+	if((ic_version!=1)||(se_mode1>4))
+	{
+    return AT_PARAM_ERROR;				
+	}	
+	
+	se_mode=se_mode1;
+	
+  return AT_OK;		
+}
+
+ATEerror_t at_NMEA353_get(const char *param)
+{
+  PPRINTF("%d\r\n",se_mode);
+	
+  return AT_OK;		
+}
+
+ATEerror_t at_NMEA886_set(const char *param)
+{
+	uint8_t fr_mode1;
+	
+	if (tiny_sscanf(param, "%d", &fr_mode1) != 1)	
+	{
+    return AT_PARAM_ERROR;		
+	}	
+
+	if(ic_version>1)
+	{
+    return AT_PARAM_ERROR;				
+	}
+	
+	if((ic_version==0)&&(fr_mode1>4))
+	{
+    return AT_PARAM_ERROR;				
+	}
+ 	else if((ic_version==1)&&(fr_mode1>5))
+	{
+    return AT_PARAM_ERROR;				
+	} 
+	
+	fr_mode=fr_mode1;
+	
+  return AT_OK;	
+}
+
+ATEerror_t at_NMEA886_get(const char *param)
+{
+  PPRINTF("%d\r\n",fr_mode);
+	
+  return AT_OK;		
 }
 
 /* Private functions ---------------------------------------------------------*/
