@@ -60,6 +60,7 @@
 #include "hw_msp.h"
 #include "flash_eraseprogram.h"
 #include "timeServer.h"
+#include "bsp.h"
 
 /* External variables --------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -78,6 +79,8 @@ extern uint32_t Keep_TX_DUTYCYCLE;
 
 extern uint32_t start_time;
 
+extern uint16_t AD_code3;
+
 extern uint8_t ic_version;
 
 extern uint16_t hardware_version;
@@ -86,6 +89,7 @@ extern float pdop_value;
 
 uint8_t se_mode=0;
 uint8_t fr_mode=0;
+
 uint32_t Positioning_time = 150;
 
 uint32_t set_sgm = 0;
@@ -1601,6 +1605,14 @@ ATEerror_t at_symbtimeout2LSB_set(const char *param)
 	return AT_OK;
 }
 
+ATEerror_t at_bat_get(const char *param)
+{ 
+	sensor_t sensor_data;
+	BSP_sensor_Read( &sensor_data );
+	AT_PRINTF("AT%s=%d\r\n", AT_BAT, AD_code3);
+	return AT_OK;
+}
+
 ATEerror_t at_PDOP_set(const char *param)
 {
 	uint16_t gapvalue_a;
@@ -1695,6 +1707,7 @@ ATEerror_t at_NMEA886_get(const char *param)
 	
   return AT_OK;		
 }
+
 /* Private functions ---------------------------------------------------------*/
 
 static ATEerror_t translate_status(LoRaMacStatus_t status)

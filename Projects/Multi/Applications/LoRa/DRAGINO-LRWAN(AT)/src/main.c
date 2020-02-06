@@ -960,7 +960,7 @@ static void timing(void)
 						start_time=temp_time;
 						mpuint_flags=0;		
 					}	
-					else if(temp_time-start_time>=300000)
+					else if(temp_time-start_time>=APP_TX_DUTYCYCLE)
 					{
 						start_time=temp_time;
 						PPRINTF("Enter static mode\r\n");
