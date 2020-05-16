@@ -60,6 +60,8 @@
 #include "IIC.h"
 #include "mpu9250.h"
 #include "delay.h"
+#include "iwdg.h"
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
@@ -98,6 +100,7 @@ extern uint32_t Threshold ;
 extern uint32_t Freq ;
 extern uint8_t mpuint_flags;
 extern bool button_exitflag;
+extern bool moinint_exitflag;
 
 uint32_t CHE = 0;
 
@@ -151,6 +154,8 @@ int basic_flag=0;
 
 int exti_de=0;
 
+bool is_time_to_IWDG_Refresh=0;
+
 static uint32_t ServerSetTDC;
 
 uint32_t start_time=0;
@@ -189,6 +194,10 @@ extern float pdop_value;
 
 extern float pdop_gps;
 
+extern UART_HandleTypeDef uart1;
+
+extern bool rx2_flags;
+
 uint32_t Start_times=0,End_times=0,gps_time = 0;;
 
 FP32 gps_latitude ,gps_longitude;
@@ -217,7 +226,7 @@ float Roll_old=0,Pitch_old=0,Yaw_old=0;
 void lora_send_fsm(void);
 void send_data(void);
 void send_exti(void);
-
+void send_moin(void);
 /*!
  * User application data structure
  */
@@ -245,20 +254,25 @@ void send_ALARM_data(void);
 /* start the tx process*/
 static void LoraStartTx(TxEventType_t EventType);
 
+static void time(TxEventType_t EventType);
+
 static void LoraStartjoin(TxEventType_t EventType);
 
+static void StartIWDGRefresh(TxEventType_t EventType);
+
 static TimerEvent_t TxTimer;
-static TimerEvent_t TxTimer2;
-static TimerEvent_t TxTimer3;
+static TimerEvent_t time_TxTimer;
+static TimerEvent_t join_TxTimer;
+static TimerEvent_t IWDGRefreshTimer;//watch dog
 
 /* tx timer callback function*/
 static void OnTxTimerEvent( void );
 
+static void timing( void );
+
 static void OnTxTimerEvent2( void );
 
-static void time(TxEventType_t EventType);
-
-static void timing( void );
+static void OnIWDGRefreshTimeoutEvent(void);
 
 static void printf_uplink( void );
 
@@ -345,8 +359,6 @@ int main( void )
   
   /* Configure the debug mode*/
   DBG_Init( );
-  
-	usart1_Init();
 		
 	GPS_init();
 		
@@ -365,7 +377,10 @@ int main( void )
 
   LPM_SetOffMode(LPM_APPLI_Id , LPM_Disable );
 
-  
+	iwdg_init();		
+	
+ 	StartIWDGRefresh(TX_ON_EVENT); 
+	  
   /* Configure the Lora Stack*/
   LORA_Init( &LoRaMainCallbacks, &LoRaParamInit);
   
@@ -382,10 +397,20 @@ int main( void )
 
 		send_exti();
 		
+		send_moin();
+				
+		if(is_time_to_IWDG_Refresh==1)
+		{
+			is_time_to_IWDG_Refresh=0;
+			IWDG_Refresh();
+		}	
+						
 		lora_send();
 
 		if((motion_flags==1)&&(mpuint_flags==1))
 		{
+			motion_flags=0;			
+			start_time=HW_RTC_GetTimerValue();			
 			APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;			
 			TimerInit( &TxTimer, OnTxTimerEvent );
 			gps.latitude = 0;
@@ -395,8 +420,8 @@ int main( void )
 			TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
       /*Wait for next tx slot*/
       TimerStart( &TxTimer);
-			TimerStart( &TxTimer2);	
-			motion_flags=0;		
+			TimerStart( &time_TxTimer);	
+		  TimerStart( &IWDGRefreshTimer);						
 			PPRINTF("Exit static mode\r\n");
 		}
 		
@@ -418,6 +443,8 @@ int main( void )
 
 static void LORA_HasJoined( void )
 {
+	rx2_flags=1;
+	
   PPRINTF("JOINED\r\n");
 
 	BSP_sensor_Init();
@@ -474,8 +501,7 @@ static void printf_uplink( void )
 	 TimerTime_t ts = TimerGetCurrentTime(); 
 	 PPRINTF("\n\r[%lu]", ts); 	
 	 PPRINTF("Roll=%0.2f  ",((int)(Roll1*100))/100.0);
-	 PPRINTF("Pitch=%0.2f\n\r",((int)(Pitch1*100))/100.0);
-	 DelayMs(50);
+	 PPRINTF("Pitch=%0.2f\r\n",((int)(Pitch1*100))/100.0);
 //	 PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
 //	 PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
    
@@ -487,15 +513,13 @@ static void printf_uplink( void )
 		 TimerTime_t ts = TimerGetCurrentTime(); 
 		 PPRINTF("[%lu]", ts); 	
      PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
-	   DelayMs(100);
 	 }
 	 else
 	 {
 		latitude = gps_latitude*1000000;
 		TimerTime_t ts = TimerGetCurrentTime(); 
 		PPRINTF("[%lu]", ts); 	
-    PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		
-	  DelayMs(100);		 
+    PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);			 
 	 }
 	 if(gps.lgtEW != 'E')
 	 {
@@ -504,16 +528,14 @@ static void printf_uplink( void )
 		 gps_longitude = (float)(longitude)/1000000;
 		 TimerTime_t ts = TimerGetCurrentTime(); 
 		 PPRINTF("[%lu]", ts); 	
-     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);
-	   DelayMs(100);			 
+     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);		 
 	 }
 	 else
 	 {
 		 longitude = gps_longitude*1000000; 	
 		 TimerTime_t ts = TimerGetCurrentTime(); 
 		 PPRINTF("[%lu]", ts); 	
-     PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);	
-	   DelayMs(100);			 
+     PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);			 
 	 }
 	 TimerTime_t ts2 = TimerGetCurrentTime(); 
 	 PPRINTF("[%lu]", ts2);  
@@ -527,7 +549,6 @@ static void printf_uplink( void )
 	 }	
 	 pdop_fixed=0.0;
 	 pdop_comp=7.0;	 
-	 DelayMs(50);	
    gps.latitude = 0;
    gps.longitude = 0;		
    gps_latitude = 0;
@@ -545,7 +566,8 @@ static void printf_uplink( void )
 	 PPRINTF("[%lu]", ts); 			
 	 PPRINTF("send NO.%d Alarm data \n\r",Alarm_times);		
 	}	
-   DelayMs(100);	
+	
+   DelayMs(1000);	
 }
 
 static void Send( void )
@@ -732,9 +754,9 @@ static void Send( void )
 	 gps.flag = 1;
 	 gps_setflags=0;			
 	 AppData.BuffSize = i;
-	 payloadlens=i;		 
+	 payloadlens=i;		
+	 IWDG_Refresh();			
    LORA_send( &AppData, lora_config_reqack_get());
-
 }
 
 
@@ -901,7 +923,8 @@ static void LORA_RxData( lora_AppData_t *AppData )
 		TimerInit( &TxTimer, OnTxTimerEvent );
     TimerSetValue( &TxTimer,  Server_TX_DUTYCYCLE);		
     TimerStart( &TxTimer); 
-		TimerStart( &TxTimer2);	
+		TimerStart( &time_TxTimer);	
+		TimerStart( &IWDGRefreshTimer);		
 		TDC_flag=0;
 	}			
 }
@@ -954,29 +977,29 @@ static void timing(void)
 					{
 						start_time=0;
 					}
-	
+					
 					if(mpuint_flags==1)
 					{
 						start_time=temp_time;
 						mpuint_flags=0;		
 					}	
 					else if(temp_time-start_time>=300000)
-					{
-						start_time=temp_time;
-						PPRINTF("Enter static mode\r\n");
+					{			
+						APP_TX_DUTYCYCLE=Keep_TX_DUTYCYCLE;								
 						TimerInit( &TxTimer, OnTxTimerEvent );
-						APP_TX_DUTYCYCLE=Keep_TX_DUTYCYCLE;		
 						TimerSetValue( &TxTimer, APP_TX_DUTYCYCLE);
 						/*Wait for next tx slot*/
-						TimerStart( &TxTimer);
+						TimerStart( &TxTimer);	
+						TimerStart( &IWDGRefreshTimer);						
 						motion_flags=1;	
+						PPRINTF("Enter static mode\r\n");	
 					}
 		}
 	}
-	TimerSetValue( &TxTimer2,  10000);
+	TimerSetValue( &time_TxTimer,  40000);
 	
   /*Wait for next tx slot*/
-  TimerStart( &TxTimer2);	
+  TimerStart( &time_TxTimer);	
 
 }
 
@@ -985,8 +1008,8 @@ static void time(TxEventType_t EventType)
   if (EventType == TX_ON_TIMER)
   {
     /* send everytime timer elapses */
-    TimerInit( &TxTimer2, timing );
-    TimerSetValue( &TxTimer2,  10000); 
+    TimerInit( &time_TxTimer, timing );
+    TimerSetValue( &time_TxTimer,  40000); 
     timing();
   }
 }
@@ -995,10 +1018,10 @@ static void OnTxTimerEvent2( void )
 {
 	if(join_flag==0)
 	{
-	TimerSetValue( &TxTimer3,  1000);
+	TimerSetValue( &join_TxTimer,  1000);
 	
   /*Wait for next tx slot*/
-  TimerStart( &TxTimer3);
+  TimerStart( &join_TxTimer);
 		
 	join_flag++;
 	}
@@ -1014,12 +1037,33 @@ static void LoraStartjoin(TxEventType_t EventType)
   if (EventType == TX_ON_TIMER)
   {
     /* send everytime timer elapses */
-    TimerInit( &TxTimer3, OnTxTimerEvent2 );
-    TimerSetValue( &TxTimer3, 1000); 
+    TimerInit( &join_TxTimer, OnTxTimerEvent2 );
+    TimerSetValue( &join_TxTimer, 1000); 
 	
     OnTxTimerEvent2();
   }
 }
+
+static void OnIWDGRefreshTimeoutEvent( void )
+{
+	TimerSetValue( &IWDGRefreshTimer,  18000);
+
+  TimerStart( &IWDGRefreshTimer);
+
+	is_time_to_IWDG_Refresh=1;
+}
+
+static void StartIWDGRefresh(TxEventType_t EventType)
+{
+  if (EventType == TX_ON_EVENT)
+  {
+    /* send everytime timer elapses */
+    TimerInit( &IWDGRefreshTimer, OnIWDGRefreshTimeoutEvent );
+    TimerSetValue( &IWDGRefreshTimer,  18000); 
+		TimerStart( &IWDGRefreshTimer);
+  }
+}
+
 #endif
 
 static void LORA_ConfirmClass ( DeviceClass_t Class )
@@ -1050,9 +1094,8 @@ void lora_send(void)
 			break;
 		}
 		case  STATE_GPS_SEND:
-		{	
-      stop_flag=0;
-			__HAL_UART_ENABLE_IT(&uart1,UART_IT_RXNE);				
+		{		
+			stop_flag=0;				
 			if(gps.GSA_mode2 == 3)		
   		{
 				if(gps.latitude > 0 && gps.longitude > 0)
@@ -1066,8 +1109,7 @@ void lora_send(void)
 						if(Positioning_time!=0)
 						{	
 							GPS_POWER_OFF();
-						}
-						__HAL_UART_DISABLE_IT(&uart1,UART_IT_RXNE);
+						}		
 					}
 					else if(pdop_value<pdop_gps)
 					{
@@ -1084,8 +1126,7 @@ void lora_send(void)
 						if(Positioning_time!=0)
 						{	
 							GPS_POWER_OFF();
-						}
-						__HAL_UART_DISABLE_IT(&uart1,UART_IT_RXNE);						
+						}							
 					}	
 				}
 			}	
@@ -1125,6 +1166,7 @@ void lora_send(void)
 				 }
 				 if(Alarm_times1 == 60)
 				 {
+					 DelayMs(3500);						 
 					 start_time=HW_RTC_GetTimerValue();							 
 					 ALARM = 0;					 
            GPS_ALARM = 0;						  			 
@@ -1147,9 +1189,9 @@ void lora_send(void)
 				if(GS == 1)
 				{			
 					ALARM = 1;	
-					gps_state_off();					
+					gps_state_off();							
+					LED3_1;						
 	        Send( );
-					LED3_1;	
 					DelayMs(5000);
 					LED3_0;			
 					GS = 0;
@@ -1170,7 +1212,7 @@ void lora_send(void)
 				gps_state_no();
 			  if(motion_flags==1)
 			  {
-				 APP_TX_DUTYCYCLE = Keep_TX_DUTYCYCLE;
+				  APP_TX_DUTYCYCLE = Keep_TX_DUTYCYCLE;
 			  }		
 			  else	
 			  {							
@@ -1182,7 +1224,8 @@ void lora_send(void)
 			  TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
         /*Wait for next tx slot*/
         TimerStart( &TxTimer);
-				TimerStart( &TxTimer2);					
+				TimerStart( &time_TxTimer);		
+				TimerStart( &IWDGRefreshTimer);						
 			  LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
 				if( MD == 0)
 				{
@@ -1192,7 +1235,7 @@ void lora_send(void)
 				{
 					MPU_INT_Init();
 				}					
-			  PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);		
+//			PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);		
         PPRINTF("LP == 1\n\r");				
 		    lora_state_Led();
 				a = 1;
@@ -1241,8 +1284,7 @@ void lora_send(void)
 					if(Positioning_time!=0)
 					{	
 						GPS_POWER_OFF();
-					}
-					__HAL_UART_DISABLE_IT(&uart1,UART_IT_RXNE);
+					}			
 					if(GPS_ALARM == 0)
 					{
 						 LED3_0;
@@ -1285,6 +1327,7 @@ void lora_send(void)
 					 }
 					 if(Alarm_times1 == 60)
 					 {
+						 DelayMs(3500);	
 						 start_time=HW_RTC_GetTimerValue();		
 						 ALARM = 0;
 						 GPS_ALARM = 0;							 
@@ -1320,7 +1363,7 @@ void send_data(void)
 			 }		
 			 else	
 			 {							
-				  APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
+				 APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
 			 }
 			 TimerInit( &TxTimer, OnTxTimerEvent );
 	     TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
@@ -1328,9 +1371,10 @@ void send_data(void)
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
        /*Wait for next tx slot*/
        TimerStart( &TxTimer);
-			 TimerStart( &TxTimer2);				 
+			 TimerStart( &time_TxTimer);
+			 TimerStart( &IWDGRefreshTimer);					 
 			 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-			 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
+//		 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
 			 if( MD == 0)
 			 {
 					MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
@@ -1372,9 +1416,10 @@ void send_ALARM_data(void)
        Send( );	
 			 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
        /*Wait for next tx slot*/
-       TimerStart( &TxTimer);		
+       TimerStart( &TxTimer);	
+			 TimerStart( &IWDGRefreshTimer);			
 			 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
-			 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
+//		 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
 		   MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep	
        lora_state_Led();
 			 BSP_sensor_Init();
@@ -1649,17 +1694,21 @@ void CalibrateToZero(void)
 			yawoffset=0;
 }
 
-void USART1_IRQHandler(void)
-{
-	usart1_IRQHandler(&uart1);
-}
-
 void send_exti(void)
 {
 	 if(button_exitflag==1)
 	 {
 		 lora_state_INT();
 		 button_exitflag=0;
+	 }
+}
+
+void send_moin(void)
+{
+	 if(moinint_exitflag==1)
+	 {
+		 MPU9250_INT();
+		 moinint_exitflag=0;
 	 }
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

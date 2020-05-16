@@ -33,6 +33,9 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jae
 #include "bsp.h"
 #include "delay.h"
 
+bool adr_flags=0;
+uint8_t rx_flags;
+uint32_t rx1_de,rx2_de;
 extern uint8_t symbtime1_value;
 extern uint8_t flag1;
 extern uint8_t symbtime2_value;
@@ -801,7 +804,8 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
                 // DLSettings
                 LoRaMacParams.Rx1DrOffset = ( LoRaMacRxPayload[11] >> 4 ) & 0x07;
                 LoRaMacParams.Rx2Channel.Datarate = LoRaMacRxPayload[11] & 0x0F;
-
+								rx_flags=LoRaMacParams.Rx2Channel.Datarate;
+							
                 // RxDelay
                 LoRaMacParams.ReceiveDelay1 = ( LoRaMacRxPayload[12] & 0x0F );
                 if( LoRaMacParams.ReceiveDelay1 == 0 )
@@ -810,7 +814,9 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
                 }
                 LoRaMacParams.ReceiveDelay1 *= 1000;
                 LoRaMacParams.ReceiveDelay2 = LoRaMacParams.ReceiveDelay1 + 1000;
-
+                rx1_de=LoRaMacParams.ReceiveDelay1;
+								rx2_de=LoRaMacParams.ReceiveDelay2;
+								
                 // Apply CF list
                 applyCFList.Payload = &LoRaMacRxPayload[13];
                 // Size of the regular payload is 12. Plus 1 byte MHDR and 4 bytes MIC
@@ -1799,22 +1805,29 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
 												PPRINTF("\r\n");											
 												PPRINTF("ADR Message:\r\n");	
 											  #if defined ( REGION_US915 ) || defined ( REGION_AU915 )|| defined ( REGION_CN470 )
-												PPRINTF("ChannelsMask change to ");	
-
-												MibRequestConfirm_t mib;
-												mib.Type = MIB_CHANNELS_MASK;
-												LoRaMacMibGetRequestConfirm(&mib);
-
-												for(int i=0;i<6;i++)
+											  if(adr_flags==0)
 												{
-													PPRINTF("%04x ",mib.Param.ChannelsMask[i]);	
-												}		
-												PPRINTF("\r\n");
+													PPRINTF("ChannelsMask change to ");	
+
+													MibRequestConfirm_t mib;
+													mib.Type = MIB_CHANNELS_MASK;
+													LoRaMacMibGetRequestConfirm(&mib);
+                        
+													for(int i=0;i<6;i++)
+													{
+														PPRINTF("%04x ",mib.Param.ChannelsMask[i]);	
+													}		
+													PPRINTF("\r\n");
+												}
 												#endif											
 												PPRINTF("TX Datarate %d change to %d\r\n",TXdr,linkAdrDatarate);
 												PPRINTF("TxPower %d change to %d\r\n",TXpower,linkAdrTxPower);
+											  if(adr_flags==0)
+												{												
 												PPRINTF("NbRep %d change to %d\r\n",nbreq,linkAdrNbRep);		
-												PPRINTF("\r\n");			
+												}
+												PPRINTF("\r\n");	
+												adr_flags=1;											
                     }
 
                     // Add the answers to the buffer

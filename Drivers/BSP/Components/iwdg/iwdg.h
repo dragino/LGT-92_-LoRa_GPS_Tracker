@@ -6,18 +6,18 @@
 (______/|_____)_|_|_| \__)_____)\____)_| |_|
     (C)2013 Semtech
 
-Description: Bleeper board GPIO driver implementation
+Description: contains all hardware driver
 
 License: Revised BSD License, see LICENSE.TXT file include in the project
 
 Maintainer: Miguel Luis and Gregory Cristian
 */
  /******************************************************************************
-  * @file    stm32l0xx_it.h
+  * @file    gpio_exti.h
   * @author  MCD Application Team
-  * @version V1.1.4
-  * @date    08-January-2018
-  * @brief   manages interupt
+  * @version V1.1.1
+  * @date    01-June-2017
+  * @brief   contains all hardware driver
   ******************************************************************************
   * @attention
   *
@@ -59,38 +59,33 @@ Maintainer: Miguel Luis and Gregory Cristian
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __STM32L0xx_IT_H__
-#define __STM32L0xx_IT_H__
+#ifndef __IWDG_H__
+#define __IWDG_H__
 
 #ifdef __cplusplus
-extern "C" {
+ extern "C" {
 #endif
-
 /* Includes ------------------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
 
-void NMI_Handler(void);
-void HardFault_Handler(void);
-void MemManage_Handler(void);
-void BusFault_Handler(void);
-void UsageFault_Handler(void);
-void SVC_Handler(void);
-void DebugMon_Handler(void);
-void PendSV_Handler(void);
-void SysTick_Handler(void);
-void EXTI4_15_IRQHandler(void);
-void TIM21_IRQHandler(void);
-void UARTX_IRQHandler(void);
-void USARTX_DMA_TX_IRQHandler(void);
-void USART1_IRQHandler(void);
-	
+/* Exported constants --------------------------------------------------------*/
+/* External variables --------------------------------------------------------*/
+/* Exported macros -----------------------------------------------------------*/
+/* Exported functions ------------------------------------------------------- */ 
+/**
+ * @brief  
+ *
+ * @note
+ * @retval None
+ */
+void iwdg_init(void);
+uint32_t GetLSIFrequency(void);
+void TIMER_IRQHandler(void);
+void IWDG_Refresh(void);
+	 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __STM32L0xx_IT_H__ */
-
+#endif 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

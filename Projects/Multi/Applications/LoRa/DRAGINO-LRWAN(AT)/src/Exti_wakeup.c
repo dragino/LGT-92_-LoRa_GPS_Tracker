@@ -41,19 +41,19 @@ void EXTI4_15_IRQHandler_Config(void)
   __HAL_RCC_GPIOB_CLK_ENABLE(); 
 
   /* Configure PB.14 pin as input floating */
-  GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING_FALLING ;
+  GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStructure.Pull = GPIO_PULLDOWN ;
   GPIO_InitStructure.Pin = GPIO_PIN_14;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 	
 	  /* Configure PB.12 pin as input floating */
-  GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING_FALLING ;
+  GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStructure.Pull = GPIO_PULLDOWN ;
   GPIO_InitStructure.Pin = GPIO_PIN_12;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 
   /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
-  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 2, 0);
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 }
 /**

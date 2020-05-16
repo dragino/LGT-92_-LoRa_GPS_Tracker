@@ -151,16 +151,13 @@ void vcom_DeInit(void)
 
 void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 {
+	if(huart->Instance==LPUART1)
+	{	
   static DMA_HandleTypeDef hdma_tx;
-  
-  
-  /*##-1- Enable peripherals and GPIO Clocks #################################*/
-  /* Enable GPIO TX/RX clock */
-  USARTX_TX_GPIO_CLK_ENABLE();
-  USARTX_RX_GPIO_CLK_ENABLE();
-	__USART1_CLK_ENABLE();
+
   /* Enable USARTX clock */
   USARTX_CLK_ENABLE();
+		
    /* select USARTX clock source*/
   RCC_PeriphCLKInitTypeDef  PeriphClkInit={0};
   PeriphClkInit.PeriphClockSelection=RCC_PERIPHCLK_LPUART1;
@@ -173,7 +170,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   /*##-2- Configure peripheral GPIO ##########################################*/  
   /* UART  pin configuration  */
   vcom_IoInit();
-  usart1_IoInit();
+	
   /*##-3- Configure the DMA ##################################################*/
   /* Configure the DMA handler for Transmission process */
   hdma_tx.Instance                 = USARTX_TX_DMA_CHANNEL;
@@ -200,6 +197,16 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   /* NVIC for USART, to catch the TX complete */
   HAL_NVIC_SetPriority(USARTX_IRQn, USARTX_DMA_Priority, 1);
   HAL_NVIC_EnableIRQ(USARTX_IRQn);
+	}
+ else if(huart->Instance==USART1)
+ { 
+	USARTX1_CLK_ENABLE();	 
+
+	usart1_IoInit();
+    		
+  HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(USART1_IRQn);
+ }	
 }
 
 void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)

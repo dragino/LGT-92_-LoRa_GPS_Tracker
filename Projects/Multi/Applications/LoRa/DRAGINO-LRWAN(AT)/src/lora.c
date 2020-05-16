@@ -70,6 +70,7 @@ uint8_t mpuint_flags=0;
 uint8_t ic_version=0;
 uint16_t hardware_version=0;
 float pdop_value;
+bool rx2_flags=0;
 
 extern uint8_t se_mode;
 extern uint8_t fr_mode;
@@ -105,8 +106,9 @@ extern uint32_t MD ;
 extern uint32_t MLON ;
 extern uint32_t Threshold ;
 extern uint32_t Freq ;
-
 extern uint32_t GS;
+extern uint8_t rx_flags;
+extern uint32_t rx1_de,rx2_de;
 
 #define HEX16(X)  X[0],X[1], X[2],X[3], X[4],X[5], X[6],X[7],X[8],X[9], X[10],X[11], X[12],X[13], X[14],X[15]
 #define HEX8(X)   X[0],X[1], X[2],X[3], X[4],X[5], X[6],X[7]
@@ -511,7 +513,7 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
 				Read_Config();
 				FLASH_program_on_addr(0x8018F80,0x11);
         s_timer = 1;
-        PRINTF("Please set the parameters or reset Device to apply change\n\r");				
+        PPRINTF("Please set the parameters or reset Device to apply change\n\r");				
 			}
       else 
 			{					
@@ -1153,17 +1155,44 @@ void Read_Config(void)
 	mib.Param.Rx2Channel.Frequency=r_config[2];
 	LoRaMacMibSetRequestConfirm( &mib );
 	
+  if((rx2_flags==0)||(lora_config.otaa==LORA_DISABLE))
+  {		
 	mib.Type = MIB_RX2_CHANNEL;
 	mib.Param.Rx2Channel.Datarate=r_config[3];
 	LoRaMacMibSetRequestConfirm( &mib );
+  }
+  else if(rx2_flags==1)
+	{
+	mib.Type = MIB_RX2_CHANNEL;
+	mib.Param.Rx2Channel.Datarate=rx_flags;
+	LoRaMacMibSetRequestConfirm( &mib );
+	}
 	
+  if((rx2_flags==0)||(lora_config.otaa==LORA_DISABLE))
+  {		
 	mib.Type = MIB_RECEIVE_DELAY_1;
 	mib.Param.ReceiveDelay1=r_config[4];
 	LoRaMacMibSetRequestConfirm( &mib );
-	
+  }
+  else if(rx2_flags==1)
+	{
+	mib.Type = MIB_RECEIVE_DELAY_1;
+	mib.Param.ReceiveDelay1=rx1_de;
+	LoRaMacMibSetRequestConfirm( &mib );		
+  }
+
+  if((rx2_flags==0)||(lora_config.otaa==LORA_DISABLE))
+  {			
 	mib.Type = MIB_RECEIVE_DELAY_2;
 	mib.Param.ReceiveDelay2=r_config[5];
 	LoRaMacMibSetRequestConfirm( &mib );
+  }
+  else if(rx2_flags==1)
+	{
+	mib.Type = MIB_RECEIVE_DELAY_2;
+	mib.Param.ReceiveDelay2=rx2_de;
+	LoRaMacMibSetRequestConfirm( &mib );		
+  }
 	
 	mib.Type = MIB_JOIN_ACCEPT_DELAY_1;
 	mib.Param.JoinAcceptDelay1=r_config[6];
@@ -1255,7 +1284,7 @@ void lora_state_INT(void)
 	in1=HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_14);
 	if(in1 == 1)
 	{
-		PRINTF("Enter\n\r");
+		PPRINTF("Enter\n\r");
 		GPS_ALARM =1;
 		GS = 1;
 		GPS_POWER_OFF();

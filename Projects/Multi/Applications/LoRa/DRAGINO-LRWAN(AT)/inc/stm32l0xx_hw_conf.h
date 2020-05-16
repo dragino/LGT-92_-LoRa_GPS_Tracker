@@ -134,6 +134,7 @@ Maintainer: Miguel Luis and Gregory Cristian
 /* --------------------------- USART HW definition -------------------------------*/
 #define USARTX                           LPUART1
 #define USARTX_CLK_ENABLE()              __LPUART1_CLK_ENABLE()
+#define USARTX1_CLK_ENABLE()             __USART1_CLK_ENABLE()
 #define USARTX_RX_GPIO_CLK_ENABLE()      __GPIOA_CLK_ENABLE()
 #define USARTX_TX_GPIO_CLK_ENABLE()      __GPIOA_CLK_ENABLE() 
 #define DMAX_CLK_ENABLE()                __HAL_RCC_DMA1_CLK_ENABLE()

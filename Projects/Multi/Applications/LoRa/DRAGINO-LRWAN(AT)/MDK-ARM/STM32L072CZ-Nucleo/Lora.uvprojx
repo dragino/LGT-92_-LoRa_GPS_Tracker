@@ -338,7 +338,7 @@
               <MiscControls>--C99</MiscControls>
               <Define>STM32L072xx, USE_STM32L0XX_NUCLEO,USE_HAL_DRIVER, REGION_US915</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\inc;..\..\..\..\..\..\..\Drivers\BSP\STM32L0xx_Nucleo;..\..\..\..\..\..\..\Drivers\STM32L0xx_HAL_Driver\Inc;..\..\..\..\..\..\..\Drivers\CMSIS\Device\ST\STM32L0xx\Include;..\..\..\..\..\..\..\Drivers\CMSIS\Include;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Crypto;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Phy;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Utilities;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Core;..\..\..\..\..\..\..\Drivers\BSP\Components\Common;..\..\..\..\..\..\..\Drivers\BSP\Components\sx1276;..\..\..\..\..\..\..\Drivers\BSP\sx1276mb1las;..\..\..\..\..\..\..\Drivers\BSP\Components\flash_eraseprogram;..\..\..\..\..\..\..\Drivers\BSP\Components\gps;..\..\..\..\..\..\..\Drivers\BSP\Components\usart;..\..\..\..\..\..\..\Drivers\BSP\Components\filter;..\..\..\..\..\..\..\Drivers\BSP\Components\IIC;..\..\..\..\..\..\..\Drivers\BSP\Components\mpu9250</IncludePath>
+              <IncludePath>..\..\inc;..\..\..\..\..\..\..\Drivers\BSP\STM32L0xx_Nucleo;..\..\..\..\..\..\..\Drivers\STM32L0xx_HAL_Driver\Inc;..\..\..\..\..\..\..\Drivers\CMSIS\Device\ST\STM32L0xx\Include;..\..\..\..\..\..\..\Drivers\CMSIS\Include;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Crypto;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Phy;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Utilities;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Core;..\..\..\..\..\..\..\Drivers\BSP\Components\Common;..\..\..\..\..\..\..\Drivers\BSP\Components\sx1276;..\..\..\..\..\..\..\Drivers\BSP\sx1276mb1las;..\..\..\..\..\..\..\Drivers\BSP\Components\flash_eraseprogram;..\..\..\..\..\..\..\Drivers\BSP\Components\gps;..\..\..\..\..\..\..\Drivers\BSP\Components\usart;..\..\..\..\..\..\..\Drivers\BSP\Components\filter;..\..\..\..\..\..\..\Drivers\BSP\Components\IIC;..\..\..\..\..\..\..\Drivers\BSP\Components\mpu9250;..\..\..\..\..\..\..\Drivers\BSP\Components\iwdg</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -416,6 +416,11 @@
               <FileName>mpu9250.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\mpu9250\mpu9250.c</FilePath>
+            </File>
+            <File>
+              <FileName>iwdg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\iwdg\iwdg.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -556,6 +561,11 @@
               <FileName>stm32l0xx_hal_flash.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\..\..\Drivers\STM32L0xx_HAL_Driver\Src\stm32l0xx_hal_flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32l0xx_hal_iwdg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\..\..\..\Drivers\STM32L0xx_HAL_Driver\Src\stm32l0xx_hal_iwdg.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -11,8 +11,6 @@
 #ifdef __cplusplus
  extern "C" {
 #endif
- 
-extern  UART_HandleTypeDef uart1;
 	 
 /* Includes ------------------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/

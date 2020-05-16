@@ -65,11 +65,16 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "exti_wakeup.h"
 #include "GPS.h"  
 #include "lora.h"
+#include "iwdg.h"
+
 bool button_exitflag=0;
+bool moinint_exitflag=0;
 extern uint32_t MD ;
 extern uint32_t GPS_ALARM;
 extern bool is_lora_joined;
 extern uint8_t stop_flag;
+extern  UART_HandleTypeDef uart1;
+extern uint32_t LoRaMacState;
 /** @addtogroup STM32L1xx_HAL_Examples
   * @{
   */
@@ -196,20 +201,6 @@ void SysTick_Handler(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	HW_GPIO_IrqHandler( GPIO_Pin );
-	
-  if (GPIO_Pin == GPIO_PIN_12)
-	{
-		if(is_lora_joined==1)
-		{
-		  if(MD!=0)
-			{
-			if((stop_flag==1)&&(GPS_ALARM == 0))
-			{
-      MPU9250_INT();
-			}
-			}
-		}
-	}	
 }
 
 /******************************************************************************/
@@ -227,6 +218,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 /*void PPP_IRQHandler(void)
 {
 }*/
+
+void USART1_IRQHandler(void)
+{
+	usart1_IRQHandler(&uart1);
+}
 
 void USARTX_IRQHandler( void )
 {
@@ -278,6 +274,19 @@ void EXTI4_15_IRQHandler( void )
 
  if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_12) != RESET) 
   { 
+		if(is_lora_joined==1)
+		{
+		  if(MD!=0)
+			{
+				if( ( LoRaMacState & 0x00000001 ) != 0x00000001 )
+		  	{	
+					if((stop_flag==1)&&(GPS_ALARM == 0))
+					{
+						moinint_exitflag=1;
+					}
+			  }
+			}
+		}
 	 __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
    HAL_GPIO_EXTI_Callback(GPIO_PIN_12);
   }	
@@ -297,4 +306,13 @@ void EXTI4_15_IRQHandler( void )
   HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_15 );
 }
 
+/**
+  * @brief  This function handles TIM21 global interrupt request.
+  * @param  None
+  * @retval None
+  */
+void TIM21_IRQHandler(void)
+{ 
+  TIMER_IRQHandler();
+}
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

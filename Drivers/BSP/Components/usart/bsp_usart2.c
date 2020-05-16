@@ -1,4 +1,4 @@
-
+#include "hw.h"
 #include "bsp_usart2.h"
 #include "vcom.h"
 #include <stdarg.h>
@@ -18,7 +18,7 @@ __IO uint16_t iw1=0;
 /* buffer read index*/
 //static uint16_t ir=0;
 
- UART_HandleTypeDef uart1;
+UART_HandleTypeDef uart1;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Functions Definition ------------------------------------------------------*/
@@ -45,10 +45,8 @@ void usart1_Init(void)
   if(HAL_UART_Init(&uart1) != HAL_OK)
   {
     /* Initialization Error */
-    //Error_Handler(); 
+    Error_Handler(); 
   } 
-  HAL_NVIC_SetPriority(USART1_IRQn, 3, 0);
-  HAL_NVIC_EnableIRQ(USART1_IRQn);
 	__HAL_UART_ENABLE_IT(&uart1,UART_IT_RXNE);//??????
 }
 
