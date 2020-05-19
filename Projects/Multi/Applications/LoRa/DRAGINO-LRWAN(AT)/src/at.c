@@ -630,6 +630,11 @@ ATEerror_t at_DataRate_set(const char *param)
 		{
     return AT_PARAM_ERROR;			
 		}
+#elif defined( REGION_KZ865 )
+	  if(datarate>=8)
+		{
+    return AT_PARAM_ERROR;			
+		}		
 #endif
 	
   lora_config_tx_datarate_set(datarate) ;

@@ -453,6 +453,8 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
   LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_US915 );
 #elif defined( REGION_RU864 )
   LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_RU864 );
+#elif defined( REGION_KZ865 )
+  LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks, LORAMAC_REGION_KZ865 );	
 #else
     #error "Please define a region in the compiler options."
 #endif
@@ -544,6 +546,8 @@ void region_printf(void)
   PPRINTF("US915\n\r");
 #elif defined( REGION_RU864 )
   PPRINTF("RU864\n\r");	
+#elif defined( REGION_KZ865 )
+  PPRINTF("KZ865\n\r");		
 #else
     #error "Please define a region in the compiler options."
 #endif
