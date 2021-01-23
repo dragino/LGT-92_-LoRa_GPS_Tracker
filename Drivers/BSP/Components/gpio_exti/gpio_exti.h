@@ -65,25 +65,36 @@ Maintainer: Miguel Luis and Gregory Cristian
 #ifdef __cplusplus
  extern "C" {
 #endif
-/* Includes ------------------------------------------------------------------*/
-/* Exported types ------------------------------------------------------------*/
-
-/* Exported constants --------------------------------------------------------*/
-/* External variables --------------------------------------------------------*/
-/* Exported macros -----------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */ 
 /**
- * @brief  
- *
- * @note
- * @retval None
- */
-void  GPIO_EXTI_IoInit( void  );
-void  GPIO_EXTI_IoDeInit( void  );
-void  GPIO_INPUT_IoInit(void);
+  * @brief  System Power Configuration
+  *         The system Power is configured as follow : 
+  *            + Regulator in LP mode
+  *            + VREFINT OFF, with fast wakeup enabled
+  *            + MSI as SysClk after Wake Up
+  *            + No IWDG
+  *            + Wakeup using EXTI Line (User push-button PC.13)
+  * @param  None
+  * @retval None
+  */	 
+void SystemPower_Config(void);
+/**
+  * @brief  Configures EXTI lines 4 to 15 (connected to PC.13 pin) in interrupt mode
+  * @param  None
+  * @retval None
+  */
+void EXTI4_15_IRQHandler_Config(void);
+/**
+  * @brief GPIO EXTI callback
+  * @param None
+  * @retval None
+  */
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+
 #ifdef __cplusplus
 }
+ 
+//void send(void);
 #endif
 
-#endif 
+#endif
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

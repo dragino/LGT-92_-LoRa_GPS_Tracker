@@ -62,8 +62,8 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "debug.h"
 #include "bsp.h"
 #include "vcom.h"
-#include "bsp_usart2.h"
 #include "lora.h"
+#include "bsp_usart2.h"
 /*!
  *  \brief Unique Devices IDs register set ( STM32L0xxx )
  */
@@ -138,10 +138,14 @@ void HW_Init( void )
     HW_RTC_Init( );
     
     TraceInit( );
-	
+
+	  Read_Config();
+		
 		usart1_Init();
 		    
     BSP_sensor_Init( );
+		
+		BSP_powerLED_Init();		
 
     McuInitialized = true;
   }
@@ -161,6 +165,8 @@ void HW_DeInit( void )
   vcom_DeInit( );
 	
 	usart1_DeInit();
+	
+  BSP_powerLED_DeInit();	
    
   McuInitialized = false;
 }
@@ -175,7 +181,6 @@ static void HW_IoInit( void )
   HW_SPI_IoInit( );
   
   Radio.IoInit( );
-	
 
 }
 
@@ -192,11 +197,13 @@ static void HW_IoDeInit( void )
 	
 	BSP_sensor_DeInit();
 	
+	BSP_powerLED_DeInit();
+
   if((lora_getState() != STATE_WAKE_JOIN))
 	{	
 		GPS_doinit();
-	}
-
+	}	
+	
 }
 
 

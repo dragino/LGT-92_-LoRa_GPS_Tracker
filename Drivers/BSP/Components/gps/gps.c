@@ -24,7 +24,7 @@ extern uint8_t gps_setflags;
 extern uint8_t se_mode;
 extern uint8_t fr_mode;
 extern uint8_t ic_version;
-
+extern uint32_t loggps;
 _Bool GPS_Run(void)   
 {   
     if( isrunning)   
@@ -1039,35 +1039,38 @@ uint8_t GPS_INFO_update(void)
 //    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);  
 	  
-    GPIO_InitStructure.Pin =   GPIO_PIN_5 ;
-    GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStructure.Pull = GPIO_NOPULL;
-//    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);  
+//    GPIO_InitStructure.Pin =   GPIO_PIN_5 ;
+//    GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
+//    GPIO_InitStructure.Pull = GPIO_NOPULL;
+////    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+//    HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);  
  
 }
 
 void GPS_INPUT(void)
 {
-//	  int dd,mm;
-//    FP32 ss;
+	  int dd,mm;
+    FP32 ss;
 //	
 	  GPS_INFO_update();
-//    GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
-//	
-//    AT_PRINTF("%s:%3d %2d'%5.2f ",(gps.latNS == 'N')?"北纬":"南纬",dd, mm, ss);
-//    AT_PRINTF("%s: %.6f度\n\r",(gps.latNS == 'N')?"北纬":"南纬",gps.latitude);
+	  if(loggps == 1)
+		{
+    GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
+	
+    AT_PRINTF("%s:%3d %2d'%5.2f ",(gps.latNS == 'N')?"North":"South",dd, mm, ss);
+    AT_PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps.latitude);
 
-//    GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
-//    AT_PRINTF("%s:%3d %2d'%05.2f\n\r ",(gps.lgtEW == 'E')?"东经":"西经",dd, mm, ss);
-//	  AT_PRINTF("%s: %.6f度\n\r ",(gps.lgtEW == 'E')?"东经":"西经",gps.longitude);
-//    AT_PRINTF("海拔:%.1f%c    ",gps.altitude,gps.altitudeunit);
-//    AT_PRINTF("速度:%.1f km/h    ",gps.speed);
-//    AT_PRINTF("航向:%.1f度    ",gps.direction);
-//    AT_PRINTF("时间:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);   
-//    AT_PRINTF("日期:20%02d-%d-%d  ",gps.YY,gps.MM,gps.DD); 
-//    AT_PRINTF("卫星:%2d/%2d\n\r",gps.usedsatnum,gps.allsatnum);
-
+    GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
+    AT_PRINTF("%s:%3d %2d'%05.2f",(gps.lgtEW == 'E')?"East":"West",dd, mm, ss);
+	  AT_PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps.longitude);
+		AT_PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit);
+    AT_PRINTF("Speed:%.1f km/h ",gps.speed);
+    AT_PRINTF("Course:%.1f ",gps.direction);
+    AT_PRINTF("Time:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);   
+    AT_PRINTF("Date:20%02d-%d-%d ",gps.YY,gps.MM,gps.DD); 
+    AT_PRINTF("Satellite:%2d/%2d\n\r",gps.usedsatnum,gps.allsatnum);
+		}
+    
     switch(gps.FixMode)
     {
         case 0:
@@ -1089,6 +1092,9 @@ void GPS_INPUT(void)
 		  gps.flag = 0;
 		} 
 }
+
+
+
 void POWER_ON()
 {
    GPS_init();

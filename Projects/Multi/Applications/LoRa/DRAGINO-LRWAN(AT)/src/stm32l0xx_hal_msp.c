@@ -49,9 +49,6 @@
 #include "hw.h"
 #include "delay.h"
 #include "timeServer.h"
-#include "exti_wakeup.h"
-#include "GPS.h"  
-#include "lora.h"
 /* when fast wake up is enabled, the mcu wakes up in ~20us  * and 
  * does not wait for the VREFINT to be settled. THis is ok for 
  * most of the case except when adc must be used in this case before 
@@ -156,7 +153,7 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef *hrtc)
   __HAL_RCC_RTC_ENABLE();
   
   /*##-3- Configure the NVIC for RTC Alarm ###################################*/
-  HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0x0, 1);
+  HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0x0, 0);
   HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 }
 
@@ -191,25 +188,9 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
   */
 //void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 //{
-//	HW_GPIO_IrqHandler( GPIO_Pin );
-//	if (GPIO_Pin == GPIO_PIN_14)
-//	{
-//      lora_state_INT();
-//	  	POWER_ON();
-//	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_14);
-//	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-//		
-//	}
-////	HW_GPIO_IrqHandler( GPIO_Pin );
-////	if (GPIO_Pin == GPIO_PIN_12)
-////	{
-////      MPU9250_INT();
-//////	  	POWER_ON();
-////	   __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_12);
-////	   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-////		
-////	}	
+//  HW_GPIO_IrqHandler( GPIO_Pin );
 //}
+
 /**
   * @brief TIM MSP Initialization 
   *        This function configures the hardware resources used in this example: 

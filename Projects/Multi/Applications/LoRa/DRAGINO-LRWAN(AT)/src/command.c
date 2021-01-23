@@ -84,6 +84,8 @@ static const char *const ATError_description[] =
   "\r\nOK\r\n",                     /* AT_OK */
   "\r\nAT_ERROR\r\n",               /* AT_ERROR */
   "\r\nAT_PARAM_ERROR\r\n",         /* AT_PARAM_ERROR */
+  "\r\nERROR:Not in Range\r\n",     /* AT_PARAM_NOT in Range */	
+  "\r\nERROR:Run AT+FDR first\r\n", /* AT_PARAM_FDR */		
   "\r\nAT_BUSY_ERROR\r\n",          /* AT_BUSY_ERROR */
   "\r\nAT_TEST_PARAM_OVERFLOW\r\n", /* AT_TEST_PARAM_OVERFLOW */
   "\r\nAT_NO_NETWORK_JOINED\r\n",   /* AT_NO_NET_JOINED */
@@ -96,6 +98,17 @@ static const char *const ATError_description[] =
  */
 static const struct ATCommand_s ATCommand[] =
 {
+ {
+    .string = AT_DEBUG,
+    .size_string = sizeof(AT_DEBUG) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_DEBUG ":Set more info input\r\n",
+#endif
+    .get = at_return_error,
+    .set = at_return_error,
+    .run = at_DEBUG_run,
+  },
+	
   {
     .string = AT_RESET,
     .size_string = sizeof(AT_RESET) - 1,
@@ -117,7 +130,7 @@ static const struct ATCommand_s ATCommand[] =
     .set = at_return_error,
     .run = at_FDR,
   },
-	
+
 #ifndef NO_KEY_ADDR_EUI
   {
     .string = AT_DEUI,
@@ -195,7 +208,7 @@ static const struct ATCommand_s ATCommand[] =
     .run = at_return_error,
   },
 #endif
-
+  
   {
     .string = AT_ADR,
     .size_string = sizeof(AT_ADR) - 1,
@@ -439,7 +452,42 @@ static const struct ATCommand_s ATCommand[] =
     .set = at_return_error,
     .run = at_Receive,
   },
-  
+
+	#if defined ( REGION_AU915 ) || defined ( REGION_AS923 )	
+	{
+    .string = AT_DWELLT,
+    .size_string = sizeof(AT_DWELLT) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_DWELLT ": Get or set UplinkDwellTime\r\n",
+#endif
+    .get = at_DwellTime_get,
+    .set = at_DwellTime_set,
+    .run = at_return_error,
+  },
+#endif
+
+	{
+    .string = AT_RJTDC,
+    .size_string = sizeof(AT_RJTDC) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_RJTDC ": Get or set the ReJoin data transmission interval in min\r\n",
+#endif
+    .get = at_RJTDC_get,
+    .set = at_RJTDC_set,
+    .run = at_return_error,
+  },
+	
+	{
+    .string = AT_RPL,
+    .size_string = sizeof(AT_RPL) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_RPL ": Get or set response level\r\n",
+#endif
+    .get = at_RPL_get,
+    .set = at_RPL_set,
+    .run = at_return_error,
+  },
+	
   {
     .string = AT_VER,
     .size_string = sizeof(AT_VER) - 1,
@@ -460,8 +508,8 @@ static const struct ATCommand_s ATCommand[] =
     .get = at_hardware_ic_get,
     .set = at_hardware_ic_set,
     .run = at_return_error,
-	 },
-    
+	 },	
+  
   {
     .string = AT_CFM,
     .size_string = sizeof(AT_CFM) - 1,
@@ -507,17 +555,6 @@ static const struct ATCommand_s ATCommand[] =
   },
 	
 	{
-    .string = AT_TDC,
-    .size_string = sizeof(AT_TDC) - 1,
-#ifndef NO_HELP
-    .help_string = "AT"AT_TDC ": Get or set the application data transmission interval in ms\r\n",
-#endif
-    .get = at_TDC_get,
-    .set = at_TDC_set,
-    .run = at_return_error,
-  },
-
-	{
     .string = AT_ACE,
     .size_string = sizeof(AT_ACE) - 1,
 #ifndef NO_HELP
@@ -551,6 +588,29 @@ static const struct ATCommand_s ATCommand[] =
   },	
 
 	{
+    .string = AT_LOGGPS,
+    .size_string = sizeof(AT_LOGGPS) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_LOGGPS ": Get or set the GPS positioning time in s\r\n",
+#endif
+    .get = at_loggps_get,
+    .set = at_loggps_set,
+    .run = at_return_error,
+  },	
+	
+
+	{
+    .string = AT_TDC,
+    .size_string = sizeof(AT_TDC) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_TDC ": Get or set the application data transmission interval in ms\r\n",
+#endif
+    .get = at_TDC_get,
+    .set = at_TDC_set,
+    .run = at_return_error,
+  },
+	
+	{
     .string = AT_PORT,
     .size_string = sizeof(AT_PORT) - 1,
 #ifndef NO_HELP
@@ -560,17 +620,28 @@ static const struct ATCommand_s ATCommand[] =
     .set = at_application_port_set,
     .run = at_return_error,
   },
- 
-	{
-	  .string = AT_CHS,
-    .size_string = sizeof(AT_CHS) - 1,
+	
+  {
+	  .string = AT_RX1WTO,
+    .size_string = sizeof(AT_RX1WTO) - 1,
 #ifndef NO_HELP
-    .help_string = "AT"AT_CHS ": Get or Set Frequency (Unit: Hz) for Single Channel Mode\r\n",
+    .help_string = "AT"AT_RX1WTO ": Get or Set the number of symbols to detect and timeout from RXwindow1(0 to 255)\r\n",
 #endif
-    .get = at_CHS_get,
-    .set = at_CHS_set,
+    .get = at_symbtimeout1LSB_get,
+    .set = at_symbtimeout1LSB_set,
     .run = at_return_error,
 	},
+	
+	{
+	  .string = AT_RX2WTO,
+    .size_string = sizeof(AT_RX2WTO) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_RX2WTO ": Get or Set the number of symbols to detect and timeout from RXwindow2(0 to 255)\r\n",
+#endif
+    .get = at_symbtimeout2LSB_get,
+    .set = at_symbtimeout2LSB_set,
+    .run = at_return_error,
+	 },
 	
 	{
 	  .string = AT_SGM,
@@ -647,31 +718,31 @@ static const struct ATCommand_s ATCommand[] =
     .get = at_NMEA886_get,
     .set = at_NMEA886_set,
     .run = at_return_error,
-	},
-			
-  {
-	  .string = AT_RX1WTO,
-    .size_string = sizeof(AT_RX1WTO) - 1,
+	},	 
+	
+		{
+	  .string = AT_MOD,
+    .size_string = sizeof(AT_MOD) - 1,
 #ifndef NO_HELP
-    .help_string = "AT"AT_RX1WTO ": Get or Set the number of symbols to detect and timeout from RXwindow1(0 to 255)\r\n",
+    .help_string = "AT"AT_MOD ":Get or Set the work mode(1:IIC mode,2:Distance mode,3:3ADC mode,4:3DS18B20 mode,5:weight mode)\r\n",
 #endif
-    .get = at_symbtimeout1LSB_get,
-    .set = at_symbtimeout1LSB_set,
+    .get = at_MOD_get,
+    .set = at_MOD_set,
     .run = at_return_error,
 	},
-	
+		
 	{
-	  .string = AT_RX2WTO,
-    .size_string = sizeof(AT_RX2WTO) - 1,
+	  .string = AT_CHS,
+    .size_string = sizeof(AT_CHS) - 1,
 #ifndef NO_HELP
-    .help_string = "AT"AT_RX2WTO ": Get or Set the number of symbols to detect and timeout from RXwindow2(0 to 255)\r\n",
+    .help_string = "AT"AT_CHS ": Get or Set Frequency (Unit: Hz) for Single Channel Mode\r\n",
 #endif
-    .get = at_symbtimeout2LSB_get,
-    .set = at_symbtimeout2LSB_set,
+    .get = at_CHS_get,
+    .set = at_CHS_set,
     .run = at_return_error,
-	 },	
+	},
 	
-	#if defined( REGION_US915 ) || defined( REGION_US915_HYBRID ) || defined ( REGION_AU915 ) || defined ( REGION_CN470 )
+	#if defined( REGION_US915 ) || defined ( REGION_AU915 ) || defined ( REGION_CN470 )
 	{
 	  .string = AT_CHE,
     .size_string = sizeof(AT_CHE) - 1,
@@ -682,8 +753,8 @@ static const struct ATCommand_s ATCommand[] =
     .set = at_CHE_set,
     .run = at_return_error,
 	},
-	#endif
-
+	#endif	
+	
 	{
 	  .string = AT_CFG,
     .size_string = sizeof(AT_CFG) - 1,
@@ -692,9 +763,31 @@ static const struct ATCommand_s ATCommand[] =
 #endif
     .get = at_return_error,
     .set = at_return_error,
-    .run = at_return_error,
+    .run = at_CFG_run,
 	},
 
+	{
+    .string = AT_CAL,
+    .size_string = sizeof(AT_CAL) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_CAL ": the sensor should be kept herizontal when calibrating Acc and Gyro\r\n",
+#endif
+    .get = at_return_error,
+    .set = at_return_error,
+    .run = at_CAL,
+  },
+
+	{
+    .string = AT_BAT,
+    .size_string = sizeof(AT_BAT) - 1,
+#ifndef NO_HELP
+    .help_string = "AT"AT_BAT ": the get device battery level\r\n",
+#endif
+    .get = at_BAT_get,
+    .set = at_return_error,
+    .run = at_return_error,
+  },		
+		
 };
 
 
@@ -821,21 +914,6 @@ static void parse_cmd(const char *cmd)
     {
       if (strncmp(cmd, ATCommand[i].string, ATCommand[i].size_string) == 0)
       {
-				if(strcmp(cmd,AT_CFG) == 0)
-			  {
-				  for (int j = 0; j< (sizeof(ATCommand) / sizeof(struct ATCommand_s)); j++)
-          {
-				    if((ATCommand[j].get)!=at_return_error)
-				    {
-              PPRINTF("AT%s=",ATCommand[j].string);
-			        ATCommand[j].get(( char *)cmd);						 
-				    }
-			    }
-			 status = AT_OK;
-			 break;
-			}
-      else
-			{
         Current_ATCommand = &(ATCommand[i]);
         /* point to the string after the command to parse it */
         cmd += Current_ATCommand->size_string;
@@ -871,13 +949,25 @@ static void parse_cmd(const char *cmd)
 
         /* we end the loop as the command was found */
         break;
-      }
 		 }
     }
   }
 
   com_error(status);
-
 }
 
+uint8_t printf_all_config(void)
+{
+	char *cmd;
+	for (int j = 0; j< (sizeof(ATCommand) / sizeof(struct ATCommand_s)); j++)
+	{
+		if((ATCommand[j].get)!=at_return_error)
+		{
+			PPRINTF("AT%s=",ATCommand[j].string);
+			ATCommand[j].get(( char *)cmd);						 
+		}
+	}
+	
+	return 1;
+}
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

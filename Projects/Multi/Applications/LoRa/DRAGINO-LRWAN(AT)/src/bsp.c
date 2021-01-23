@@ -92,6 +92,7 @@ void  BSP_sensor_Init( void  )
 {
 	  GPIO_InitTypeDef GPIO_InitStructure; 
 	  BSP_battery_Init();
+	  GPS_Init();
   	LED_CLK_ENABLE();  
 	
 	  GPIO_InitStructure.Pin =   LED1_PIN | LED0_PIN | LED3_PIN  ;
@@ -129,13 +130,25 @@ void  BSP_powerLED_Init( void  )
 	
 }
 
+void  GPS_Init( void  )
+{
+	  GPIO_InitTypeDef GPIO_InitStructure; 
+	  __GPIOB_CLK_ENABLE();
+	  GPIO_InitStructure.Pin   = GPIO_PIN_5   ;
+    GPIO_InitStructure.Mode  = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStructure.Pull  = GPIO_NOPULL;
+    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(GPIOB , &GPIO_InitStructure);  
+	
+}
+
 void  BSP_powerLED_DeInit( void  )
 {
 	   GPIO_InitTypeDef GPIO_InitStructure; 
 	
 	  __GPIOA_CLK_ENABLE();
 	
-	  GPIO_InitStructure.Pin =  GPIO_PIN_11 ;
+	  GPIO_InitStructure.Pin =  LED1_PIN | LED0_PIN | LED3_PIN  ;
     GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStructure.Pull = GPIO_NOPULL;
 //    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -149,8 +162,14 @@ void powerLED(void)
 
 	BSP_powerLED_Init();
 	LED0_1 ;
-	DelayMs(2000);
+	DelayMs(200);
   LED0_0;
+	LED1_1 ;
+	DelayMs(200);
+  LED1_0;	
+	LED3_1 ;
+	DelayMs(200);
+  LED3_0;		
 
 }
 void  BSP_battery_Init( void )

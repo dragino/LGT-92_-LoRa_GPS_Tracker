@@ -16,7 +16,7 @@
         <TargetCommonOption>
           <Device>STM32L072CZTx</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32L0xx_DFP.2.0.0</PackID>
+          <PackID>Keil.STM32L0xx_DFP.2.1.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000,0x00005000) IROM(0x08000000,0x00030000) CPUTYPE("Cortex-M0+") CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -134,7 +134,7 @@
             <RunIndependent>1</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4100</DriverSelection>
+            <DriverSelection>4103</DriverSelection>
           </Flash1>
           <bUseTDR>0</bUseTDR>
           <Flash2>STLink\ST-LINKIII-KEIL_SWO.dll</Flash2>
@@ -336,9 +336,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--C99</MiscControls>
-              <Define>STM32L072xx, USE_STM32L0XX_NUCLEO,USE_HAL_DRIVER, REGION_EU868</Define>
+              <Define>STM32L072xx, USE_STM32L0XX_NUCLEO,USE_HAL_DRIVER, USE_SHT,REGION_EU868</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\inc;..\..\..\..\..\..\..\Drivers\BSP\STM32L0xx_Nucleo;..\..\..\..\..\..\..\Drivers\STM32L0xx_HAL_Driver\Inc;..\..\..\..\..\..\..\Drivers\CMSIS\Device\ST\STM32L0xx\Include;..\..\..\..\..\..\..\Drivers\CMSIS\Include;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Crypto;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Phy;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Utilities;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Core;..\..\..\..\..\..\..\Drivers\BSP\Components\Common;..\..\..\..\..\..\..\Drivers\BSP\Components\sx1276;..\..\..\..\..\..\..\Drivers\BSP\sx1276mb1las;..\..\..\..\..\..\..\Drivers\BSP\Components\flash_eraseprogram;..\..\..\..\..\..\..\Drivers\BSP\Components\gps;..\..\..\..\..\..\..\Drivers\BSP\Components\usart;..\..\..\..\..\..\..\Drivers\BSP\Components\filter;..\..\..\..\..\..\..\Drivers\BSP\Components\IIC;..\..\..\..\..\..\..\Drivers\BSP\Components\mpu9250;..\..\..\..\..\..\..\Drivers\BSP\Components\iwdg</IncludePath>
+              <IncludePath>..\..\inc;..\..\..\..\..\..\..\Drivers\BSP\STM32L0xx_Nucleo;..\..\..\..\..\..\..\Drivers\STM32L0xx_HAL_Driver\Inc;..\..\..\..\..\..\..\Drivers\CMSIS\Device\ST\STM32L0xx\Include;..\..\..\..\..\..\..\Drivers\CMSIS\Include;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Crypto;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Phy;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Utilities;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Core;..\..\..\..\..\..\..\Drivers\BSP\Components\Common;..\..\..\..\..\..\..\Drivers\BSP\Components\sx1276;..\..\..\..\..\..\..\Drivers\BSP\sx1276mb1las;..\..\..\..\..\..\..\Drivers\BSP\Components\flash_eraseprogram;..\..\..\..\..\..\..\Drivers\BSP\Components\gpio_exti;..\..\..\..\..\..\..\Drivers\BSP\Components\iwdg;..\..\..\..\..\..\..\Drivers\BSP\Components\filter;..\..\..\..\..\..\..\Drivers\BSP\Components\gps;..\..\..\..\..\..\..\Drivers\BSP\Components\mpu9250;..\..\..\..\..\..\..\Drivers\BSP\Components\IIC;..\..\..\..\..\..\..\Drivers\BSP\Components\usart</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -383,24 +383,24 @@
           <GroupName>Drivers/BSP/Components</GroupName>
           <Files>
             <File>
-              <FileName>sx1276.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\sx1276\sx1276.c</FilePath>
-            </File>
-            <File>
               <FileName>flash_eraseprogram.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\flash_eraseprogram\flash_eraseprogram.c</FilePath>
             </File>
             <File>
-              <FileName>gps.c</FileName>
+              <FileName>iwdg.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\gps\gps.c</FilePath>
+              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\iwdg\iwdg.c</FilePath>
             </File>
             <File>
-              <FileName>bsp_usart2.c</FileName>
+              <FileName>sx1276.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\usart\bsp_usart2.c</FilePath>
+              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\sx1276\sx1276.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\gpio_exti\gpio_exti.c</FilePath>
             </File>
             <File>
               <FileName>filter.c</FileName>
@@ -413,14 +413,19 @@
               <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\IIC\IIC.c</FilePath>
             </File>
             <File>
+              <FileName>gps.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\gps\gps.c</FilePath>
+            </File>
+            <File>
               <FileName>mpu9250.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\mpu9250\mpu9250.c</FilePath>
             </File>
             <File>
-              <FileName>iwdg.c</FileName>
+              <FileName>bsp_usart2.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\iwdg\iwdg.c</FilePath>
+              <FilePath>..\..\..\..\..\..\..\Drivers\BSP\Components\usart\bsp_usart2.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -656,11 +661,6 @@
               <FileName>tiny_vsnprintf.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\src\tiny_vsnprintf.c</FilePath>
-            </File>
-            <File>
-              <FileName>Exti_wakeup.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\src\Exti_wakeup.c</FilePath>
             </File>
           </Files>
         </Group>

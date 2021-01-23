@@ -105,6 +105,8 @@ void  BSP_powerLED_DeInit( void  );
 
 void  BSP_battery_Init( void );
 
+void  GPS_Init(void);
+
 void powerLED(void);
 
 /**

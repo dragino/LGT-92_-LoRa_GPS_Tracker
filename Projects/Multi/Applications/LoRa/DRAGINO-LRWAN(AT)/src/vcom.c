@@ -46,15 +46,19 @@
   
 #include "hw.h"
 #include "vcom.h"
+#include "timeServer.h"
+#include "delay.h"
 #include "bsp_usart2.h"
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Uart Handle */
-static UART_HandleTypeDef UartHandle;
+UART_HandleTypeDef UartHandle;
 
 uint8_t charRx;
+
 //uint8_t uartprintf_flag=0;
 
 static void (*TxCpltCallback) (void);
@@ -96,7 +100,6 @@ void vcom_Trace(  uint8_t *p_data, uint16_t size )
     HAL_UART_Transmit_DMA(&UartHandle,p_data, size);
 }
 
-
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
   /* buffer transmission complete*/
@@ -127,11 +130,14 @@ void vcom_ReceiveInit(  void (*RxCb)(uint8_t *rxChar) )
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
+	if(UartHandle->Instance==LPUART1)
+	{
    if ((NULL != RxCpltCallback) && (HAL_UART_ERROR_NONE ==UartHandle->ErrorCode))
    {
      RxCpltCallback(&charRx);
    }
    HAL_UART_Receive_IT(UartHandle, &charRx,1);
+  }
 }
 
 void vcom_DMA_TX_IRQHandler(void)
@@ -144,6 +150,7 @@ void vcom_IRQHandler(void)
   HAL_UART_IRQHandler(&UartHandle);
 }
 
+
 void vcom_DeInit(void)
 {
   HAL_UART_DeInit(&UartHandle);
@@ -152,12 +159,17 @@ void vcom_DeInit(void)
 void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance==LPUART1)
-	{	
+	{
   static DMA_HandleTypeDef hdma_tx;
+  
+  
+  /*##-1- Enable peripherals and GPIO Clocks #################################*/
+  /* Enable GPIO TX/RX clock */
+  USARTX_TX_GPIO_CLK_ENABLE();
+  USARTX_RX_GPIO_CLK_ENABLE();
 
   /* Enable USARTX clock */
   USARTX_CLK_ENABLE();
-		
    /* select USARTX clock source*/
   RCC_PeriphCLKInitTypeDef  PeriphClkInit={0};
   PeriphClkInit.PeriphClockSelection=RCC_PERIPHCLK_LPUART1;
@@ -170,7 +182,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   /*##-2- Configure peripheral GPIO ##########################################*/  
   /* UART  pin configuration  */
   vcom_IoInit();
-	
+
   /*##-3- Configure the DMA ##################################################*/
   /* Configure the DMA handler for Transmission process */
   hdma_tx.Instance                 = USARTX_TX_DMA_CHANNEL;
@@ -197,16 +209,16 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   /* NVIC for USART, to catch the TX complete */
   HAL_NVIC_SetPriority(USARTX_IRQn, USARTX_DMA_Priority, 1);
   HAL_NVIC_EnableIRQ(USARTX_IRQn);
-	}
- else if(huart->Instance==USART1)
- { 
-	USARTX1_CLK_ENABLE();	 
+ }
+	else if(huart->Instance==USART1)
+	{
+	  USARTX1_CLK_ENABLE();	 
 
-	usart1_IoInit();
-    		
-  HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
-  HAL_NVIC_EnableIRQ(USART1_IRQn);
- }	
+	  usart1_IoInit();
+
+	  HAL_NVIC_SetPriority(USART1_IRQn, 2, 0);
+    HAL_NVIC_EnableIRQ(USART1_IRQn);		
+ }
 }
 
 void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
@@ -270,4 +282,5 @@ void vcom_IoDeInit(void)
   GPIO_InitStructure.Pin =  USARTX_RX_PIN ;
   HAL_GPIO_Init(  USARTX_RX_GPIO_PORT, &GPIO_InitStructure ); 
 }
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

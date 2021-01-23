@@ -190,6 +190,11 @@ Maintainer: Miguel Luis and Gregory Cristian
 #define I2Cx_IRQn                       I2C1_IRQn
 #define I2Cx_IRQHandler                 I2C1_IRQHandler
 
+/* ---------------------------  KEY HW definition -------------------------------*/
+#define GPIO_USERKEY_CLK_ENABLE()        __GPIOB_CLK_ENABLE()
+#define GPIO_USERKEY_PORT                GPIOB
+#define GPIO_USERKEY_PIN                 GPIO_PIN_14
+
 /* ---------------------------  RGB definition -------------------------------*/
 #define LED_CLK_ENABLE()  __HAL_RCC_GPIOA_CLK_ENABLE()
 #define LED1_PORT          GPIOA	 

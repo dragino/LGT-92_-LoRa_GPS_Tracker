@@ -131,7 +131,8 @@ typedef enum eState
     STATE_WAKE_JOIN,
     STATE_GPS_SEND,
     STATE_GPS_ALARM,
-    STATE_LORA_ALARM
+    STATE_LORA_ALARM,
+	  STATE_GPS_LOG
 } State_t;
 
 typedef enum eGPSState
@@ -147,6 +148,7 @@ typedef enum eSGM
     STATE_SEND_GPS,
 	  STATE_SEND_GPS_MPU,
 } SGM_t;
+
 /*!
  * LoRa State Machine states 
  */
@@ -254,7 +256,7 @@ typedef struct sLoRaMainCallback
  * @retval none
  */
 void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam );
-
+void fdr_config(void);
 /**
  * @brief run Lora classA state Machine 
  * @param [IN] none
@@ -477,7 +479,6 @@ void lora_config_nwkskey_set(uint8_t nwkskey[16]);
 uint8_t *lora_config_nwkskey_get(void);
 
 void Store_key(void);
-void Store_time(void);
 void Store_Config(void);
 void store_data(uint8_t size,uint8_t *data1,uint32_t data2);
 void read_data(uint8_t size,uint8_t *data1,uint32_t data3,uint32_t data4,uint32_t data5,uint32_t data6);	 
@@ -485,6 +486,8 @@ void Read_Config(void);
 void key_printf(void);
 void EEPROM_Store_Config(void);
 void EEPROM_Read_Config(void);
+uint16_t string_touint(void);
+void new_firmware_update(void);
 
 uint32_t customize_freq1_get(void);
 
@@ -521,6 +524,8 @@ void gps_state_on(void);
 void gps_state_off(void);
 	
 void gps_state_no(void);
+
+void LOG_GPS(void);
 
 void LORA_GPS(void);
 

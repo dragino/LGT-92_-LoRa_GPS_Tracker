@@ -49,6 +49,10 @@
 #include "delay.h"
 #include "LoRaMac.h"
 
+extern bool ser_ack;
+extern bool address_flags;
+extern bool debug_flags;
+extern uint16_t dr_power;
 /*
  * Local types definition
  */
@@ -599,6 +603,13 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                         uint8_t hopPeriod, bool iqInverted, uint32_t timeout )
 {
     SX1276SetModem( modem );
+	
+//	  if(dr_power ==1 )
+//		{
+//			power = 20;
+//			datarate =  0;
+//			dr_power = 0;
+//		}
 
     LoRaBoardCallbacks->SX1276BoardSetRfTxPower( power );
 
@@ -1620,10 +1631,25 @@ void SX1276OnDio0Irq( void )
                     if( ( RadioEvents != NULL ) && ( RadioEvents->RxDone != NULL ) )
                     {
                         RadioEvents->RxDone( RxTxBuffer, SX1276.Settings.LoRaPacketHandler.Size, SX1276.Settings.LoRaPacketHandler.RssiValue, SX1276.Settings.LoRaPacketHandler.SnrValue );
- 												TimerTime_t ts = TimerGetCurrentTime(); 
-												PPRINTF("[%lu]", ts); 
-												PPRINTF("rxDone\n\r" );
-												PPRINTF("Rssi= %d\n\r",SX1276.Settings.LoRaPacketHandler.RssiValue);
+												if(address_flags==0)
+												{
+													if(debug_flags==1)
+												  {
+													TimerTime_t ts = TimerGetCurrentTime(); 
+													PPRINTF("[%lu]", ts); 
+													}
+													if(ser_ack==1)
+													{
+														PPRINTF("rxDone(ACK)\r\n" );
+														ser_ack=0;
+													}
+													else
+													{
+														PPRINTF("rxDone\r\n" );
+													}
+													PPRINTF("Rssi= %d\r\n",SX1276.Settings.LoRaPacketHandler.RssiValue);
+												}
+												address_flags=0;												
                     }
                 }
                 break;
@@ -1646,9 +1672,12 @@ void SX1276OnDio0Irq( void )
                 if( ( RadioEvents != NULL ) && ( RadioEvents->TxDone != NULL ) )
                 {
                     RadioEvents->TxDone( );
+									  if(debug_flags==1)
+									  {
 										TimerTime_t ts = TimerGetCurrentTime(); 
-										PPRINTF("[%lu]", ts); 									
-                    PPRINTF( "txDone\n\r" );
+										PPRINTF("[%lu]", ts); 
+										}											
+                    PPRINTF( "txDone\r\n" );
                 }
                 break;
             }
@@ -1711,9 +1740,12 @@ void SX1276OnDio1Irq( void )
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxTimeout != NULL ) )
                 {
                     RadioEvents->RxTimeout( );
+										if(debug_flags==1)
+									  {									
 										TimerTime_t ts = TimerGetCurrentTime(); 
-										PPRINTF("[%lu]", ts); 									
-                    PPRINTF( "rxTimeOut\n\r" );
+										PPRINTF("[%lu]", ts); 	
+										}											
+                    PPRINTF( "rxTimeOut\r\n" );
                 }
                 break;
             default:

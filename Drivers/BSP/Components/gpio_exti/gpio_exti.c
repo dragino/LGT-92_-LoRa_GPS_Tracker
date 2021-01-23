@@ -49,48 +49,70 @@
 #include "gpio_exti.h"
 
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Exported functions ---------------------------------------------------------*/
-
-/* Private variables ---------------------------------------------------------*/
-void  GPIO_EXTI_IoInit( void  )
+/**
+  * @brief  System Power Configuration
+  *         The system Power is configured as follow : 
+  *            + Regulator in LP mode
+  *            + VREFINT OFF, with fast wakeup enabled
+  *            + MSI as SysClk after Wake Up
+  *            + No IWDG
+  *            + Wakeup using EXTI Line (User push-button PC.13)
+  * @param  None
+  * @retval None
+  */
+void SystemPower_Config(void)
 {
-	GPIO_InitTypeDef GPIO_InitStruct={0};
-	GPIO_EXTI_CLK_ENABLE();
-	
-	GPIO_InitStruct.Mode =GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
 
-  HW_GPIO_Init( GPIO_EXTI_PORT, GPIO_EXTI_PIN, &GPIO_InitStruct );
+  /* Enable Power Control clock */
+  __HAL_RCC_PWR_CLK_ENABLE();
+
+  /* Enable Ultra low power mode */
+  HAL_PWREx_EnableUltraLowPower();
+  
+  /* Enable the fast wake up from Ultra low power mode */
+  HAL_PWREx_EnableFastWakeUp();
+
+  /* Select MSI as system clock source after Wake Up from Stop mode */
+  __HAL_RCC_WAKEUPSTOP_CLK_CONFIG(RCC_STOP_WAKEUPCLOCK_HSI);
+  
+}
+/**
+  * @brief  Configures EXTI lines 4 to 15 (connected to PC.13 pin) in interrupt mode
+  * @param  None
+  * @retval None
+  */
+void EXTI4_15_IRQHandler_Config(void)
+{
+  GPIO_InitTypeDef   GPIO_InitStructure;
+
+  /* Enable GPIOB clock */
+  __HAL_RCC_GPIOB_CLK_ENABLE(); 
+
+  /* Configure PB.14 pin as input floating */
+  GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStructure.Pull = GPIO_PULLDOWN ;
+  GPIO_InitStructure.Pin = GPIO_PIN_14;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 	
-	/* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
-  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+	  /* Configure PB.12 pin as input floating */
+  GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStructure.Pull = GPIO_PULLDOWN ;
+  GPIO_InitStructure.Pin = GPIO_PIN_12;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+  /* Enable and set EXTI lines 4 to 15 Interrupt to the lowest priority */
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 }
-void  GPIO_EXTI_IoDeInit( void  )
-{
-	GPIO_InitTypeDef GPIO_InitStruct={0};
-	GPIO_InitStruct.Mode =GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-
-  HW_GPIO_Init( GPIO_EXTI_PORT, GPIO_EXTI_PIN, &GPIO_InitStruct );
-}
-void GPIO_INPUT_IoInit(void)
-{
-	GPIO_InitTypeDef GPIO_InitStruct={0};
-	GPIO_INPUT_CLK_ENABLE();
-	
-	GPIO_InitStruct.Pin = GPIO_INPUT_PIN1;
-	GPIO_InitStruct.Mode =GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-
-  HW_GPIO_Init( GPIO_INPUT_PORT, GPIO_INPUT_PIN1, &GPIO_InitStruct );
-}
+/**
+  * @brief GPIO EXTI callback
+  * @param None
+  * @retval None
+  */
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+//{
+//  /* Clear Wake Up Flag */
+////	send();
+//  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+//}
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

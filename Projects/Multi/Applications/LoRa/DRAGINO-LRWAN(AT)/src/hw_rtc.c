@@ -61,7 +61,11 @@ Maintainer: Miguel Luis and Gregory Cristian
 /* Includes ------------------------------------------------------------------*/
 #include "hw.h"
 #include "low_power_manager.h"
-#include "lora.h"
+
+//uint8_t flagss=0,flagsss=0;
+//uint16_t  daysss=0;
+//uint16_t  hours=0,minutes=0,sceonds=0;
+
 /* Private typedef -----------------------------------------------------------*/
 typedef struct
 {
@@ -72,7 +76,6 @@ typedef struct
   RTC_DateTypeDef RTC_Calndr_Date; /* Reference date in calendar format */
   
 } RtcTimerContext_t;
-
 
 /* Private define ------------------------------------------------------------*/
 
@@ -577,6 +580,7 @@ static void HW_RTC_StartWakeUpAlarm( uint32_t timeoutValue )
   DBG_PRINTF("WU@ %d:%d:%d:%d\n\r", rtcAlarmHours, rtcAlarmMinutes, rtcAlarmSeconds, (rtcAlarmSubSeconds*1000)>>N_PREDIV_S );
 }
 
+
 /*!
  * @brief get current time from calendar in ticks
  * @param pointer to RTC_DateStruct
@@ -621,7 +625,6 @@ static TimerTime_t HW_RTC_GetCalendarValue( RTC_DateTypeDef* RTC_DateStruct, RTC
 
   return( calendarValue );
 }
-
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 

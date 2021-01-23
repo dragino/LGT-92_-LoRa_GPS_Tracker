@@ -62,7 +62,7 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "hw.h"
 #include "stm32l0xx_it.h"
 #include "vcom.h"
-#include "exti_wakeup.h"
+#include "gpio_exti.h"
 #include "GPS.h"  
 #include "lora.h"
 #include "iwdg.h"
@@ -75,6 +75,7 @@ extern bool is_lora_joined;
 extern uint8_t stop_flag;
 extern  UART_HandleTypeDef uart1;
 extern uint32_t LoRaMacState;
+extern int user_key_exti_flag;
 /** @addtogroup STM32L1xx_HAL_Examples
   * @{
   */
@@ -299,6 +300,7 @@ void EXTI4_15_IRQHandler( void )
 		{
 			button_exitflag=1;
 		}
+		user_key_exti_flag=1;
 	 __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_14);
    HAL_GPIO_EXTI_Callback(GPIO_PIN_14);
   }
