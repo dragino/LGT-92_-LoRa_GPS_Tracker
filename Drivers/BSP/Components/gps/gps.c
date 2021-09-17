@@ -1,4 +1,4 @@
-#include "GPS.h"  
+#include "gps.h"
 #include "at.h"  
 #include "vcom.h"
 #include "delay.h"

@@ -58,7 +58,7 @@
 #include "gpio_exti.h"
 #include "iwdg.h"
 #include "delay.h"
-#include "GPS.h"  
+#include "gps.h"
 #include "bsp_usart2.h"
 #include "IIC.h"
 #include "mpu9250.h"
