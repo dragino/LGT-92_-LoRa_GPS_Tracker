@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "gps.h"
 #include "at.h"  
 #include "vcom.h"
