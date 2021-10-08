@@ -1411,21 +1411,16 @@ void EEPROM_Read_Config(void)
 
 uint16_t string_touint(void)
 {
-	char *p;	
-	uint8_t chanum=0;	
-	uint16_t versi;
-	char version[8]="";
-	p=AT_VERSION_STRING;
-	
-	while(*p++!='\0')
+	uint16_t versi = 0;
+	char *p = AT_VERSION_STRING;
+
+	while(*p++ != '\0')
 	{
-  if(*p>='0'&&*p<='9')
-   {
-		 version[chanum++]=*p;
-	 }		 
+		if(*p >= '0' && *p <= '9')
+		{
+			versi = versi * 10 + *p - '0';
+		}
 	}
-	versi=atoi(version);
-	
 	return versi;
 }
 
