@@ -882,8 +882,8 @@ static void LORA_RxData( lora_AppData_t *AppData )
 				}
 				else if(AppData->Buff[1]==0xFE)  //---->AT+FDR
 				{			
-					FLASH_erase(0x8018F80);//page 799					
-				  FLASH_program_on_addr(0x8018F80,0x12);	
+					FLASH_erase(FLASH_USER_START_ADDR_FDR);
+				  FLASH_program_on_addr(FLASH_USER_START_ADDR_FDR, 0x12);
           FLASH_erase(FLASH_USER_START_ADDR_CONFIG);//Page800 					
 					atz_flags=1;						
 					rxpr_flags=1;								

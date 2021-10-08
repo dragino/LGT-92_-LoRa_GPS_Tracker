@@ -557,17 +557,17 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
 	
   lora_config.TxDatarate = LoRaParamInit->TxDatarate;
 	
-	  if(FLASH_read(0x8018F80)==0x00)	//page799
+	  if(FLASH_read(FLASH_USER_START_ADDR_FDR) == 0x00)
 		{
 			fdr_config();
-			FLASH_program_on_addr(0x8018F80,0x11);		
+			FLASH_program_on_addr(FLASH_USER_START_ADDR_FDR, 0x11);
       PRINTF("Please set the parameters or reset Device to apply change\n\r");				
 		}
-		else if(FLASH_read(0x8018F80)==0x12)
+		else if(FLASH_read(FLASH_USER_START_ADDR_FDR) == 0x12)
 		{
 			fdr_config();
-			FLASH_erase(0x8018F80);//page 799					
-			FLASH_program_on_addr(0x8018F80,0x11);	
+			FLASH_erase(FLASH_USER_START_ADDR_FDR);
+			FLASH_program_on_addr(FLASH_USER_START_ADDR_FDR, 0x11);
       NVIC_SystemReset();				
 		}
     else 
@@ -1445,7 +1445,7 @@ void new_firmware_update(void)
 	{		
 		update_flags[0]=(fire_frequcy<<16)| fire_version;
 		EEPROM_program(EEPROM_USER_Firmware_FLAGS,update_flags,1);//store hardversion
-		FLASH_erase(0x8018F80);//page 799
+		FLASH_erase(FLASH_USER_START_ADDR_FDR);
 		FLASH_erase(FLASH_USER_START_ADDR_CONFIG);
 		NVIC_SystemReset();		
 	}		

@@ -267,7 +267,7 @@ ATEerror_t at_DEBUG_run(const char *param)
 
 ATEerror_t at_FDR(const char *param)
 {
-	FLASH_erase(0x8018F80);//page 799
+	FLASH_erase(FLASH_USER_START_ADDR_FDR);
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);
 	AT_PRINTF("OK\n\r");
 	NVIC_SystemReset();
