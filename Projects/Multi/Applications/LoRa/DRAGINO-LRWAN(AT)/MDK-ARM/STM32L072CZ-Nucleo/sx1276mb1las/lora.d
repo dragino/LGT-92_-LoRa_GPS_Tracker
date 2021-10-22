@@ -71,4 +71,3 @@
 .\sx1276mb1las\lora.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Utilities\low_power_manager.h
 .\sx1276mb1las\lora.o: ..\..\..\..\..\..\..\Drivers\BSP\Components\mpu9250\mpu9250.h
 .\sx1276mb1las\lora.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Utilities\delay.h
-.\sx1276mb1las\lora.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac\LoRaMacTest.h

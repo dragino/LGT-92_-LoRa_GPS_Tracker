@@ -46,4 +46,4 @@
 .\sx1276mb1las\region.o: ..\..\inc\stm32l0xx_hw_conf.h
 .\sx1276mb1las\region.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac\LoRaMac.h
 .\sx1276mb1las\region.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac\region\Region.h
-.\sx1276mb1las\region.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac\region\RegionEU868.h
+.\sx1276mb1las\region.o: ..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac\region\RegionRU864.h

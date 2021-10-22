@@ -52,7 +52,6 @@
 extern bool ser_ack;
 extern bool address_flags;
 extern bool debug_flags;
-extern uint16_t dr_power;
 /*
  * Local types definition
  */
@@ -603,13 +602,6 @@ void SX1276SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                         uint8_t hopPeriod, bool iqInverted, uint32_t timeout )
 {
     SX1276SetModem( modem );
-	
-//	  if(dr_power ==1 )
-//		{
-//			power = 20;
-//			datarate =  0;
-//			dr_power = 0;
-//		}
 
     LoRaBoardCallbacks->SX1276BoardSetRfTxPower( power );
 

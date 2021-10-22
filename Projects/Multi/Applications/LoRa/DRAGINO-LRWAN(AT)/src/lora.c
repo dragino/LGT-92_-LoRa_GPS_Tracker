@@ -118,8 +118,8 @@ static uint32_t s_key[32];    //store key
 static uint32_t s_hard[1]; //store hardware version
 
 uint8_t mpuint_flags=0;
-uint8_t ic_version=0;
-uint16_t hardware_version=0;
+uint8_t ic_version=2;
+uint16_t hardware_version=167;
 uint8_t joinrx2_dr;
 float pdop_value;
 
@@ -146,7 +146,7 @@ extern uint32_t set_sgm;
 
 extern uint32_t Positioning_time;
 
-extern uint32_t s_timer;
+extern uint32_t s_timer; 
 
 extern uint8_t Alarm_times;
 
@@ -580,6 +580,9 @@ void fdr_config(void)
 {
 	lora_config.duty_cycle = LORA_DISABLE;
 	lora_config.application_port=2;
+//	#if defined ( REGION_US915 ) || defined ( REGION_AU915 )
+//	customize_config.set8channel = 2;
+//	#endif	
 				
   #if defined( REGION_CN470 )	
 		  customize_config.set8channel = 11;
@@ -589,15 +592,15 @@ void fdr_config(void)
 		  dwelltime=1;
 	#endif
 
-	#if defined( REGION_EU868 )	
-		  mibReq.Type = MIB_RX2_DEFAULT_CHANNEL;
-			mibReq.Param.Rx2DefaultChannel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
-			LoRaMacMibSetRequestConfirm( &mibReq );
+//	#if defined( REGION_EU868 )	
+//		  mibReq.Type = MIB_RX2_DEFAULT_CHANNEL;
+//			mibReq.Param.Rx2DefaultChannel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
+//			LoRaMacMibSetRequestConfirm( &mibReq );
 
-			mibReq.Type = MIB_RX2_CHANNEL;
-			mibReq.Param.Rx2Channel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
-			LoRaMacMibSetRequestConfirm( &mibReq );
-	#endif	
+//			mibReq.Type = MIB_RX2_CHANNEL;
+//			mibReq.Param.Rx2Channel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
+//			LoRaMacMibSetRequestConfirm( &mibReq );
+//	#endif	
 				
 	Server_TX_DUTYCYCLE=300000;
 	Alarm_TX_DUTYCYCLE=60000;
@@ -1539,4 +1542,3 @@ void LORA_GPS_MPU(void)
 	SGM =  STATE_SEND_GPS_MPU;
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-

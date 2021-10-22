@@ -12,11 +12,15 @@
 /* Private variables ---------------------------------------------------------*/
 uint8_t aRxBuffer[BUFFSIZE];  
 /* buffer */
-static char buff[BUFSIZE];
+//static char buff[BUFSIZE];
 /* buffer write index*/
 __IO uint16_t iw1=0;
-/* buffer read index*/
+/* buffe r read index*/
 //static uint16_t ir=0;
+
+char DATABUFF[500];
+uint16_t jishu =0;
+
 
 UART_HandleTypeDef uart1;
 
@@ -123,6 +127,7 @@ void usart1_IRQHandler(UART_HandleTypeDef *huart)
   uint32_t cr1its     = READ_REG(huart->Instance->CR1);
   uint32_t cr3its = READ_REG(huart->Instance->CR3);;
   uint32_t errorflags;
+	uint8_t RXBUFF1[10];
 	
 	    /* UART wakeup from Stop mode interrupt occurred ---------------------------*/
 //    if(((isrflags & USART_ISR_WUF) != RESET) && ((cr3its & USART_CR3_WUFIE) != RESET))
@@ -149,10 +154,9 @@ void usart1_IRQHandler(UART_HandleTypeDef *huart)
 //		{
 		        /*RXNE flag is auto cleared by reading the data*/
                         rx= (uint8_t)READ_REG(huart->Instance->RDR);	
-                        
+                        RXBUFF1[1]= (uint8_t)READ_REG(huart->Instance->RDR);	
                         /* allow stop mode*/
-                        //LowPower_Enable(e_LOW_POWER_UART);
-                        
+                        //LowPower_Enable(e_LOW_POWER_UART);             
 			
 		rx_ready = 1;
 	//	}	
@@ -172,12 +176,13 @@ void usart1_IRQHandler(UART_HandleTypeDef *huart)
 	if(rx_ready)
 	{
 		GPS_usart(rx);
-//   	PRINTF("RX :%c",rx);
+//		PRINTF("%c",rx);
+		if(jishu<200)
+		{
+     DATABUFF[jishu]=rx;
+		}
+		jishu++;
 	}
 }
-
-
-
-
 
 /*********************************************END OF FILE**********************/

@@ -166,7 +166,7 @@ void HW_DeInit( void )
 	
 	usart1_DeInit();
 	
-  BSP_powerLED_DeInit();	
+//  BSP_powerLED_DeInit();	
    
   McuInitialized = false;
 }
@@ -195,9 +195,9 @@ static void HW_IoDeInit( void )
   
   Radio.IoDeInit( );
 	
-	BSP_sensor_DeInit();
+//	BSP_sensor_DeInit();
 	
-	BSP_powerLED_DeInit();
+//	BSP_powerLED_DeInit();
 
   if((lora_getState() != STATE_WAKE_JOIN))
 	{	

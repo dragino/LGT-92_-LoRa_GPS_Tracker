@@ -149,6 +149,52 @@ void LoRaMacPayloadEncrypt( const uint8_t *buffer, uint16_t size, const uint8_t 
         }
     }
 }
+/*
+void LoRaMacPayloadEncrypt( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t address, uint8_t dir, uint32_t sequenceCounter, uint8_t *encBuffer )
+{
+    uint16_t i;
+    uint8_t bufferIndex = 0;
+    uint16_t ctr = 1;
+
+    memset1( AesContext.ksch, '\0', 240 );
+//    aes_set_key( key, 16, &AesContext );
+
+//    aBlock[5] = dir;
+
+//    aBlock[6] = ( address ) & 0xFF;
+//    aBlock[7] = ( address >> 8 ) & 0xFF;
+//    aBlock[8] = ( address >> 16 ) & 0xFF;
+//    aBlock[9] = ( address >> 24 ) & 0xFF;
+
+//    aBlock[10] = ( sequenceCounter ) & 0xFF;
+//    aBlock[11] = ( sequenceCounter >> 8 ) & 0xFF;
+//    aBlock[12] = ( sequenceCounter >> 16 ) & 0xFF;
+//    aBlock[13] = ( sequenceCounter >> 24 ) & 0xFF;
+
+    while( size >= 16 )
+    {
+//        aBlock[15] = ( ( ctr ) & 0xFF );
+        ctr++;
+//        aes_encrypt( aBlock, sBlock, &AesContext );
+        for( i = 0; i < 16; i++ )
+        {
+            encBuffer[bufferIndex + i] = buffer[bufferIndex + i] ^ sBlock[i];
+        }
+        size -= 16;
+        bufferIndex += 16;
+    }
+
+    if( size > 0 )
+    {
+//        aBlock[15] = ( ( ctr ) & 0xFF );
+//        aes_encrypt( aBlock, sBlock, &AesContext );
+        for( i = 0; i < size; i++ )
+        {
+            encBuffer[bufferIndex + i] = buffer[bufferIndex + i] ^ sBlock[i];
+        }
+    }
+}
+*/
 
 void LoRaMacPayloadDecrypt( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t address, uint8_t dir, uint32_t sequenceCounter, uint8_t *decBuffer )
 {

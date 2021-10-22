@@ -62,6 +62,7 @@
 #include "bsp_usart2.h"
 #include "IIC.h"
 #include "mpu9250.h"
+extern uint8_t ic_version;
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -105,33 +106,24 @@
  * User application data
  */
 static uint8_t AppDataBuff[LORAWAN_APP_DATA_BUFF_SIZE];
-uint8_t switch_status=0,normal_status=0;
-bool is_check_exit=0;
 bool rxpr_flags=0;
 int exti_flag=0;
 uint32_t COUNT;
 uint8_t TDC_flag=0;
 uint8_t join_flag=0;
 uint8_t atz_flags=0;
-uint16_t batteryLevel_mV;
 uint8_t payloadlens;
 bool is_time_to_IWDG_Refresh=0;
-bool joined_flags=0;
-bool is_there_data=0;
-bool is_time_to_rejoin=0;
 bool JoinReq_NbTrails_over=0;
 bool unconfirmed_downlink_data_ans_status=0,confirmed_downlink_data_ans_status=0;
 bool rejoin_status=0;
 bool rejoin_keep_status=0;
 bool MAC_COMMAND_ANS_status=0;
-bool uplink_data_status=0;
 uint8_t response_level=0;
 uint16_t REJOIN_TX_DUTYCYCLE=20;//min
 
 void send_exti(void);
-extern bool bh1750flags;
 extern uint8_t mode;
-extern uint8_t mode2_flag;
 extern __IO uint16_t AD_code2;
 extern __IO uint16_t AD_code3;
 extern uint8_t inmode;
@@ -182,8 +174,6 @@ uint8_t send_fail=0;
 uint32_t a = 1;
 
 int basic_flag=0;
-
-int exti_de=0;
 
 static uint32_t ServerSetTDC;
 
@@ -241,6 +231,10 @@ bool is_lora_joined=0;
 
 bool motion_flags=0;
 
+extern char DATABUFF[500];
+
+uint32_t led_red =0,led_blue=0,led_greed=0;
+bool red =0,blue=0,greed=0;
 float Roll_basic=0,Pitch_basic=0,Yaw_basic=0;
 float Roll_sum=0,Pitch_sum=0,Yaw_sum=0;
 float Roll=0,Pitch=0,Yaw=0;
@@ -252,6 +246,7 @@ void lora_send_fsm(void);
 void send_data(void);
 void send_exti(void);
 void send_moin(void);
+void gps_Identify();
 /*!
  * User application data structure
  */
@@ -433,6 +428,8 @@ int main( void )
   
   /* Configure the Lora Stack*/
   LORA_Init( &LoRaMainCallbacks, &LoRaParamInit);
+	
+	gps_Identify();	
   
   while( 1 )
   {
@@ -511,8 +508,6 @@ static void LORA_HasJoined( void )
 	rx2_flags=1;
 
 	Read_Config();
-	
-	joined_flags=1;
 	
   AT_PRINTF("JOINED\r\n");
 	
@@ -602,15 +597,15 @@ static void printf_uplink( void )
 	 }	
 	 PPRINTF("[%lu]", ts2); 
 	 PPRINTF("Satellite:%2d.%2d\n\r",gps.usedsatnum,gps.allsatnum);
-//	 PPRINTF("Fix_Time:%d \n\r",End_times); 
-//	 PPRINTF("data_success\n\r");	 
+	 PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit); 
+	 PPRINTF("Fix_Time:%d \n\r",End_times); 
+	 PPRINTF("data_success\n\r");	 
 	 pdop_fixed=0.0;
 	 pdop_comp=7.0;	 
    gps.latitude = 0;
    gps.longitude = 0;		
    gps_latitude = 0;
    gps_longitude = 0;	
-	 
 	}	
 	else
 	{
@@ -641,7 +636,7 @@ static void Send( void )
 	BSP_sensor_Read( &sensor_data );
 	
 	uint32_t i = 0;
-	
+	 AppData.Port = lora_config_application_port_get();
 	if(basic_flag==1)
 	{
 		Roll_basic=0;
@@ -658,7 +653,6 @@ static void Send( void )
 	}
  if(AD_code3 <= 2840)
 	{
-
 		LP = 1;
 		PPRINTF("\n\rBattery voltage too low\r\n");
 	}
@@ -753,22 +747,19 @@ static void Send( void )
 	TimerTime_t ts = TimerGetCurrentTime(); 	
 //	PPRINTF("\n\r[%lu]", ts); 	
 	PPRINTF("Roll=%0.2f  ",((int)(Roll1*100))/100.0);
-	PPRINTF("Pitch=%0.2f  ",((int)(Pitch1*100))/100.0);
+	PPRINTF("Pitch=%0.2f\r\n",((int)(Pitch1*100))/100.0);
 //	PPRINTF("Yaw=%0.2f\r\n",((int)(Yaw1*100))/100.0);
-	if(gps.altitude < 0)
-	{
-		Altitude = gps.altitude*100;
-		AT_PRINTF("Altitude:%d\r\n ",Altitude);
-		Altitude = (~Altitude)+1;
+//	if(gps.altitude < 0)
+//	{
+//		Altitude = gps.altitude*100;
+//		AT_PRINTF("Altitude:%d\r\n ",Altitude);
+//		Altitude = (~Altitude)+1;
 //		AT_PRINTF("Altitude:%.1f%c\r\n ",(float)Altitude/100);
-	}
-  	
-	AT_PRINTF("Altitude:%.1f%c\r\n ",gps.altitude,gps.altitudeunit);
+//	}
+  
 	printf_uplink();
-	
   FLAG = (int)(MD<<6 | LON<<5 | Firmware )& 0xFF;
 //	PRINTF("\n\rFLAG=%d  ",FLAG);
-	AppData.Port = LORAWAN_APP_PORT;
 	if(lora_getGPSState() == STATE_GPS_OFF)
 			{
 				AppData.Buff[i++] = 0x00;
@@ -804,30 +795,29 @@ static void Send( void )
 		}
    if(set_sgm == 1)
 		{
-
 			if(ALARM == 1)
 			 {
-					AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8 |0x40;      //oil float
+					AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8 |0x40;      //battery
 					AppData.Buff[i++] =(int)sensor_data.bat_mv;					
 				 
 			 }
 			else
 			 {
-					AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8;       //oil float
+					AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8;       //battery
 					AppData.Buff[i++] =(int)sensor_data.bat_mv;
 			 }
 			 AppData.Buff[i++] =(int)FLAG;
 		}
-	else if(set_sgm == 0)
+	 else if(set_sgm == 0)
 		{
 		  if(ALARM == 1)
 			 {
-				 AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8 |0x40;      //oil float
+				 AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8 |0x40;      //battery
 				 AppData.Buff[i++] =(int)sensor_data.bat_mv;
 			 }
 			 else
 			 {
-				AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8;       //oil float
+				AppData.Buff[i++] =(int)(sensor_data.bat_mv)>>8;       //battery
 				AppData.Buff[i++] =(int)sensor_data.bat_mv;
 			 }
 			 AppData.Buff[i++] =(int)FLAG;
@@ -851,7 +841,6 @@ static void Send( void )
 
 static void LORA_RxData( lora_AppData_t *AppData )
 {
-	is_there_data=1;
 		
   set_at_receive(AppData->Port, AppData->Buff, AppData->BuffSize);
 	
@@ -1028,6 +1017,69 @@ static void LORA_RxData( lora_AppData_t *AppData )
 				
 				break;
 			}		
+      case 0xa8:
+			{
+				if(AppData->BuffSize == 10)
+				{
+					if(AppData->Buff[1] == 0x01)
+					{
+						BSP_powerLED_Init();
+						LED3_1 ;
+						red =1;
+						led_red =AppData->Buff[2]<<8|AppData->Buff[3];
+						if(led_red != 0)
+						{
+							DelayMs(led_red);
+							LED3_0;
+							red =0;
+						}							
+					}
+					else
+					{
+						red =0;
+						LED3_0;
+					}
+					if(AppData->Buff[4] == 0x01)
+					{
+						BSP_powerLED_Init();
+						LED1_1 ;
+						blue =1;
+						led_blue =AppData->Buff[5]<<8|AppData->Buff[6];
+						if(led_blue != 0)
+						{
+							DelayMs(led_blue);
+							LED1_0;
+							blue =0;
+						}														
+					}
+					else
+					{
+						blue =0;
+						LED1_0;
+					}					
+					if(AppData->Buff[7] == 0x01)
+					{
+						BSP_powerLED_Init();
+						LED0_1 ;
+						greed =1;
+						led_greed =AppData->Buff[8]<<8|AppData->Buff[9];
+						if(led_blue != 0)
+						{
+							DelayMs(led_greed);
+							LED0_0;
+							greed =0;
+						}							
+					}
+					else
+					{
+						blue =0;
+						LED0_0;
+					}						
+				}
+				Store_Config();	
+				
+				break;
+			}				
       case 0xb0:
 			{
 				if(AppData->BuffSize == 2)
@@ -1280,6 +1332,7 @@ static void timing(void)
 				APP_TX_DUTYCYCLE=Keep_TX_DUTYCYCLE;								
 				TimerInit( &TxTimer, OnTxTimerEvent );
 				TimerSetValue( &TxTimer, APP_TX_DUTYCYCLE);
+				
 				/*Wait for next tx slot*/
 				TimerStart( &TxTimer);	
 				TimerStart( &IWDGRefreshTimer);						
@@ -1301,7 +1354,7 @@ static void time(TxEventType_t EventType)
   {
     /* send everytime timer elapses */
     TimerInit( &time_TxTimer, timing );
-    TimerSetValue( &time_TxTimer,  40000); 
+    TimerSetValue( &time_TxTimer, 40000); 
     timing();
   }
 }
@@ -1360,7 +1413,6 @@ static void OnReJoinTimerEvent( void )
 {
 	TimerStop( &ReJoinTimer);
 	
-	is_time_to_rejoin=1;
 }
 
 static void LoraStartRejoin(TxEventType_t EventType)
@@ -1419,12 +1471,13 @@ void lora_send(void)
   		{
 				if(gps.latitude > 0 && gps.longitude > 0)
 				{	
-					if((pdop_value>=pdop_gps)&&(pdop_gps!=0.0))
+					if(((pdop_value>=pdop_gps)&&(pdop_gps!=0.0)) || (ic_version == 2))
 					{	
 						gps_latitude = gps.latitude;
 						gps_longitude = gps.longitude;	
-					  pdop_fixed=pdop_gps;	 						
-						SendData = 1;
+						pdop_fixed=pdop_gps;	 						
+						SendData = 1;		
+            TimerStart( &IWDGRefreshTimer);							
 						if(Positioning_time!=0)
 						{	
 //						 if(GPS_ALARM == 0)
@@ -1441,7 +1494,7 @@ void lora_send(void)
 							gps_longitude = gps.longitude;
 							pdop_comp=pdop_gps;						
 						}							
-					}
+					}						
 					if((((Positioning_time!=0)&&(End_times >=Positioning_time))||((Positioning_time==0)&&(End_times >=150)))&&(gps_latitude > 0 && gps_longitude > 0))
 					{
 						SendData = 1;	
@@ -1492,7 +1545,7 @@ void lora_send(void)
 				 if(Alarm_times1 == 60)
 				 {
 					 DelayMs(3500);						 
-					 start_time=HW_RTC_GetTimerValue();							 
+					 start_time=HW_RTC_GetTimerValue();						 
 					 ALARM = 0;					 
            GPS_ALARM = 0;						  			 
 					 if(LON == 1)
@@ -1530,6 +1583,8 @@ void lora_send(void)
 			  GPS_INPUT();
 			  Start_times ++;
 				LP = 0;
+//				LED3_0;
+//				LED1_0;
 				LED0_0;							
 			}
 					
@@ -1582,6 +1637,7 @@ void lora_send(void)
 				End_times ++;
 				Start_times =0;
 				gps_time ++ ;
+				TimerStart( &IWDGRefreshTimer);	
 				if(LON == 1)
 				 {
 					LED0_1;
@@ -1596,6 +1652,7 @@ void lora_send(void)
 				{
 					PPRINTF("\r\n");
 					PPRINTF("Fix Time:%d s \n\r",End_times); 
+					TimerStart( &IWDGRefreshTimer);	
 					if(Positioning_time!=0)
 					{							
 						PPRINTF("Fix Timeout (FTIME):%d s \n\r",Positioning_time);
@@ -1670,6 +1727,7 @@ void lora_send(void)
 					 PPRINTF("Exit Alarm\r\n");						 		 
 				 }	
 				}	
+			 TimerStart( &IWDGRefreshTimer);	
 			 send_fail=0;				
 		 }
 		 position_flags=0;	
@@ -1713,9 +1771,7 @@ void send_data(void)
 				MPU_INT_Init();
 		 }				
 		 lora_state_Led();
-		 gps.flag = 1;
-		 BSP_sensor_Init();
-		 LED0_0;
+		 gps.flag = 1;	 
 		 End_times = 0 ;
 		 gps_time = 0;
 		 gps.GSA_mode2 = 0;
@@ -1727,9 +1783,21 @@ void send_data(void)
      */
 #ifndef LOW_POWER_DISABLE
     LPM_EnterLowPower();
-#endif
+#endif		 
     ENABLE_IRQ();	
-			 
+		BSP_sensor_Init();
+		if(red ==1)
+		{
+		 LED3_1;
+		}
+		if(blue ==1)
+		{
+		 LED1_1;
+		}
+		if(greed ==1)
+		{
+		 LED0_1;
+		}				 
 		if(Positioning_time==0)
 		{
 		DelayMs(2000);
@@ -1751,10 +1819,8 @@ void send_ALARM_data(void)
 		 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
 		 MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep	
 		 lora_state_Led();
-		 BSP_sensor_Init();
 		 End_times = 0 ;
 		 gps_time = 0;	
-		 LED0_0;
 		 a = 100;
 		 gps.GSA_mode2 = 0;
 //	   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
@@ -1767,8 +1833,7 @@ void send_ALARM_data(void)
 #ifndef LOW_POWER_DISABLE
     LPM_EnterLowPower();
 #endif
-    ENABLE_IRQ();	
-		
+    ENABLE_IRQ();			
 		if(Positioning_time==0)
 		{
 		DelayMs(2000);
@@ -1819,8 +1884,7 @@ void user_key_event(void)
 		{	
 			press_button_times=0;
 			user_key_duration=5;
-		}
-			
+		}			
 		switch(user_key_duration)
 		{
 			case 1:
@@ -1832,8 +1896,7 @@ void user_key_event(void)
 //				  Send();
 //				}
 				break;
-			}
-			
+			}		
 			case 2://sleep
 			{
 				sleep_status=1;
@@ -1852,8 +1915,7 @@ void user_key_event(void)
 				TimerStart( &PressButtonTimesLedTimer );
 				user_key_duration=0;
 				break;
-			}
-			
+			}		
 			case 3://system reset,Activation Mode
 			{
 				user_key_duration=0;
@@ -1866,10 +1928,11 @@ void user_key_event(void)
 		    GS = 1;
 				dr_power = 1;
 				ALARM = 1;	
+				TimerStart( &IWDGRefreshTimer);	
 				user_key_duration=0;
 				lora_state_GPS_Send();
 			 #if defined( REGION_AS923 )	|| defined( REGION_AU915 )
-			 dwelltime=0;
+			 dwelltime=1;
 			 #endif					
 				break;
 			}
@@ -1881,15 +1944,15 @@ void user_key_event(void)
 				 Alarm_times1 = 60;
 				 GPS_ALARM = 0;
 				 ALARM = 0;
-         press_button_times=0;				
+         press_button_times=0;	
+         TimerStart( &IWDGRefreshTimer);					
          BSP_sensor_Init();				
 				 HAL_GPIO_WritePin(GPIOA,LED0_PIN,GPIO_PIN_SET); 		
 				 HAL_Delay(5000);	
 			   HAL_GPIO_WritePin(GPIOA,LED0_PIN,GPIO_PIN_RESET); 		
 				 user_key_duration=0;	
          send_data();				
-			}
-			
+			}		
 			default:
 				break;
 		}
@@ -2141,6 +2204,39 @@ void CalibrateToZero(void)
 			pitchoffset=0;
 			rolloffset=0;
 			yawoffset=0;
+}
+
+void gps_Identify()
+{
+	char *ublox_buff="u-blox";
+	char *l76K_buff="IC=AT6558R";
+	char *l76L_buff="MTKGPS*08";
+	if(strstr(DATABUFF,ublox_buff) != NULL)
+	{
+		ic_version = 2;
+		pdop_value = 7.00;
+//   AT_PRINTF("gps module:%s\n\r","ublox-MAX7");		
+	}
+	else if(strstr(DATABUFF,l76K_buff) != NULL)
+	{
+    ic_version = 4;
+		pdop_value = 3.00;
+//		AT_PRINTF("gps module:%s\n\r","L76K");
+	}
+	else if(strstr(DATABUFF,l76L_buff) != NULL)
+	{
+		ic_version = 1;
+		pdop_value = 3.00;
+//		AT_PRINTF("gps module:%s\n\r","L76L");
+	}
+	
+	else
+	{
+		ic_version = 0;
+		pdop_value = 3.00;
+	}
+  Store_Config();
+	memset(DATABUFF,0,sizeof(DATABUFF));
 }
 
 void send_exti(void)

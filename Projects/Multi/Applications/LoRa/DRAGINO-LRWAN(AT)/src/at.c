@@ -419,7 +419,10 @@ ATEerror_t at_hardware_ic_get(const char *param)
 	{
 		PPRINTF("v%d.%d.%d,ublox-MAX8\r\n",hardware_version/100,(hardware_version/10)%10,hardware_version%10);					
 	}
-	
+	else if(ic_version==4)
+	{
+		PPRINTF("v%d.%d.%d,L76K\r\n",hardware_version/100,(hardware_version/10)%10,hardware_version%10);				
+	}	
 	return AT_OK;	
 }
 
@@ -1864,19 +1867,19 @@ ATEerror_t at_NMEA886_set(const char *param)
     return AT_PARAM_ERROR;		
 	}	
 
-	if(ic_version>1)
-	{
-    return AT_PARAM_ERROR;				
-	}
-	
-	if((ic_version==0)&&(fr_mode1>4))
-	{
-    return AT_PARAM_ERROR;				
-	}
- 	else if((ic_version==1)&&(fr_mode1>5))
-	{
-    return AT_PARAM_ERROR;				
-	} 
+//	if(ic_version>1)
+//	{
+//    return AT_PARAM_ERROR;				
+//	}
+//	
+//	if((ic_version==0)&&(fr_mode1>4))
+//	{
+//    return AT_PARAM_ERROR;				
+//	}
+// 	else if((ic_version==1)&&(fr_mode1>5))
+//	{
+//    return AT_PARAM_ERROR;				
+//	} 
 	
 	fr_mode=fr_mode1;
 	

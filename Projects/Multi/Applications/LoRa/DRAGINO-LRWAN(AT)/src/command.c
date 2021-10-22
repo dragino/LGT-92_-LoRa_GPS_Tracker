@@ -565,7 +565,7 @@ static const struct ATCommand_s ATCommand[] =
     .run = at_return_error,
   },	
 	
-		{
+	{
 	  .string = AT_KAT,
     .size_string = sizeof(AT_KAT) - 1,
 #ifndef NO_HELP

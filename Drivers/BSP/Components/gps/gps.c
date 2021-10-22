@@ -1068,7 +1068,9 @@ void GPS_INPUT(void)
     AT_PRINTF("Course:%.1f ",gps.direction);
     AT_PRINTF("Time:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);   
     AT_PRINTF("Date:20%02d-%d-%d ",gps.YY,gps.MM,gps.DD); 
-    AT_PRINTF("Satellite:%2d/%2d\n\r",gps.usedsatnum,gps.allsatnum);
+    AT_PRINTF("Satellite:%2d/%2d",gps.usedsatnum,gps.allsatnum);
+		AT_PRINTF("Mode:%2d\n\r",gps.GSA_mode2);
+    AT_PRINTF("PDOP:%.1f\n\r",pdop_gps);				
 		}
     
     switch(gps.FixMode)
@@ -1092,8 +1094,6 @@ void GPS_INPUT(void)
 		  gps.flag = 0;
 		} 
 }
-
-
 
 void POWER_ON()
 {

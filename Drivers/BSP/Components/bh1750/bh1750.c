@@ -34,6 +34,7 @@
   * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
   * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
   * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
   * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
   * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
   * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
@@ -151,7 +152,7 @@ void IIC_Delay(void)
 
 void IIC_Start(void)
 {
-	SDA_OUT();	/* ï¿½ï¿½SCLï¿½ßµï¿½Æ½Ê±ï¿½ï¿½SDAï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø±ï¿½Ê¾IICï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ */
+	SDA_OUT();	/* µ±SCL¸ßµçÆ½Ê±£¬SDA³öÏÖÒ»¸öÏÂÌøÑØ±íÊ¾IIC×ÜÏßÆô¶¯ÐÅºÅ */
 	IIC_SDA_1;
 	IIC_SCL_1;
 	IIC_Delay();
@@ -162,7 +163,7 @@ void IIC_Start(void)
 }	
 void IIC_Stop(void)
 {
-	SDA_OUT();/* ï¿½ï¿½SCLï¿½ßµï¿½Æ½Ê±ï¿½ï¿½SDAï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø±ï¿½Ê¾IICï¿½ï¿½ï¿½ï¿½Í£Ö¹ï¿½Åºï¿½ */
+	SDA_OUT();/* µ±SCL¸ßµçÆ½Ê±£¬SDA³öÏÖÒ»¸öÉÏÌøÑØ±íÊ¾IIC×ÜÏßÍ£Ö¹ÐÅºÅ */
 	IIC_SCL_0;
 	IIC_SDA_0;
 	IIC_Delay();
@@ -174,11 +175,11 @@ uint8_t IIC_WaitAck(void)//0:ACK 1:no ACK
 {
 	uint8_t ucErrTime=0;
   SDA_IN();
-	IIC_SDA_1;	/* CPUï¿½Í·ï¿½SDAï¿½ï¿½ï¿½ï¿½ */
+	IIC_SDA_1;	/* CPUÊÍ·ÅSDA×ÜÏß */
 	IIC_Delay();
-	IIC_SCL_1;	/* CPUï¿½ï¿½ï¿½ï¿½SCL = 1, ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½á·µï¿½ï¿½ACKÓ¦ï¿½ï¿½ */
+	IIC_SCL_1;	/* CPUÇý¶¯SCL = 1, ´ËÊ±Æ÷¼þ»á·µ»ØACKÓ¦´ð */
 	IIC_Delay();
-	while (IIC_SDA_READ())	/* CPUï¿½ï¿½È¡SDAï¿½ï¿½ï¿½ï¿½×´Ì¬ */
+	while (IIC_SDA_READ())	/* CPU¶ÁÈ¡SDA¿ÚÏß×´Ì¬ */
 	{
 			ucErrTime++;
 		if(ucErrTime>250)
@@ -211,8 +212,8 @@ void IIC_SendByte(uint8_t Byte)
 		IIC_SCL_1;
 		IIC_Delay();	
 		IIC_SCL_0;
-		IIC_SDA_1; // ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½
-		Byte <<= 1;	/* ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½bit */
+		IIC_SDA_1; // ÊÍ·Å×ÜÏß
+		Byte <<= 1;	/* ×óÒÆÒ»¸öbit */
 		IIC_Delay();
 	}
 }
@@ -237,9 +238,9 @@ uint8_t IIC_ReadByte(unsigned char ack)
 	}
 	
 	  if (!ack)
-        IIC_NAck();//ï¿½ï¿½ï¿½ï¿½nACK
+        IIC_NAck();//·¢ËÍnACK
     else
-        IIC_Ack(); //ï¿½ï¿½ï¿½ï¿½ACK  
+        IIC_Ack(); //·¢ËÍACK  
 	return value;
 }	
 
@@ -264,29 +265,29 @@ void IIC_NAck(void)
 	IIC_Delay();
 	IIC_SCL_0;	
 }
-//IICï¿½ï¿½ï¿½ï¿½Ð´
-//addr:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö· 
-//reg:ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
-//len:Ð´ï¿½ë³¤ï¿½ï¿½
-//buf:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-//ï¿½ï¿½ï¿½ï¿½Öµ:0,ï¿½ï¿½ï¿½ï¿½
-//    ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//IICÁ¬ÐøÐ´
+//addr:Æ÷¼þµØÖ· 
+//reg:¼Ä´æÆ÷µØÖ·
+//len:Ð´Èë³¤¶È
+//buf:Êý¾ÝÇø
+//·µ»ØÖµ:0,Õý³£
+//    ÆäËû,´íÎó´úÂë
 uint8_t IIC_Write_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf)
 {
     uint8_t i;
     IIC_Start();
-     IIC_SendByte((addr<<1)|0); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·+Ð´ï¿½ï¿½ï¿½ï¿½
-    if(IIC_WaitAck())          //ï¿½È´ï¿½Ó¦ï¿½ï¿½
+     IIC_SendByte((addr<<1)|0); //·¢ËÍÆ÷¼þµØÖ·+Ð´ÃüÁî
+    if(IIC_WaitAck())          //µÈ´ýÓ¦´ð
     {
         IIC_Stop();
         return 1;
     }
-     IIC_SendByte(reg);         //Ð´ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
-    IIC_WaitAck();             //ï¿½È´ï¿½Ó¦ï¿½ï¿½
+     IIC_SendByte(reg);         //Ð´¼Ä´æÆ÷µØÖ·
+    IIC_WaitAck();             //µÈ´ýÓ¦´ð
     for(i=0;i<len;i++)
     {
-         IIC_SendByte(buf[i]);  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-        if(IIC_WaitAck())      //ï¿½È´ï¿½ACK
+         IIC_SendByte(buf[i]);  //·¢ËÍÊý¾Ý
+        if(IIC_WaitAck())      //µÈ´ýACK
         {
             IIC_Stop();
             return 1;
@@ -296,54 +297,54 @@ uint8_t IIC_Write_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf)
     return 0;
 } 
 
-//IICï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-//addr:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
-//reg:Òªï¿½ï¿½È¡ï¿½Ä¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
-//len:Òªï¿½ï¿½È¡ï¿½Ä³ï¿½ï¿½ï¿½
-//buf:ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý´æ´¢ï¿½ï¿½
-//ï¿½ï¿½ï¿½ï¿½Öµ:0,ï¿½ï¿½ï¿½ï¿½
-//    ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//IICÁ¬Ðø¶Á
+//addr:Æ÷¼þµØÖ·
+//reg:Òª¶ÁÈ¡µÄ¼Ä´æÆ÷µØÖ·
+//len:Òª¶ÁÈ¡µÄ³¤¶È
+//buf:¶ÁÈ¡µ½µÄÊý¾Ý´æ´¢Çø
+//·µ»ØÖµ:0,Õý³£
+//    ÆäËû,´íÎó´úÂë
 uint8_t IIC_Read_Len(uint8_t addr,uint8_t len,uint8_t *buf)
 { 
     IIC_Start();
-    IIC_SendByte((addr<<1)|0); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·+Ð´ï¿½ï¿½ï¿½ï¿½
-    if(IIC_WaitAck())          //ï¿½È´ï¿½Ó¦ï¿½ï¿½
+    IIC_SendByte((addr<<1)|0); //·¢ËÍÆ÷¼þµØÖ·+Ð´ÃüÁî
+    if(IIC_WaitAck())          //µÈ´ýÓ¦´ð
     {
         IIC_Stop();
         return 1;
     }
 	  IIC_Start();                
-    IIC_SendByte((addr<<1)|1); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    IIC_WaitAck();             //ï¿½È´ï¿½Ó¦ï¿½ï¿½
+    IIC_SendByte((addr<<1)|1); //·¢ËÍÆ÷¼þµØÖ·+¶ÁÃüÁî
+    IIC_WaitAck();             //µÈ´ýÓ¦´ð
     while(len)
     {
-        if(len==1)*buf=IIC_ReadByte(0);//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½nACK 
-		else *buf=IIC_ReadByte(1);		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ACK  
+        if(len==1)*buf=IIC_ReadByte(0);//¶ÁÊý¾Ý,·¢ËÍnACK 
+		else *buf=IIC_ReadByte(1);		//¶ÁÊý¾Ý,·¢ËÍACK  
 		len--;
 		buf++;  
     }
-    IIC_Stop();                 //ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Í£Ö¹ï¿½ï¿½ï¿½ï¿½
+    IIC_Stop();                 //²úÉúÒ»¸öÍ£Ö¹Ìõ¼þ
     return 0;       
 }
 
-//IICÐ´Ò»ï¿½ï¿½ï¿½Ö½ï¿½ 
-//devaddr:ï¿½ï¿½ï¿½ï¿½IICï¿½ï¿½Ö·
-//reg:ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
-//data:ï¿½ï¿½ï¿½ï¿½
-//ï¿½ï¿½ï¿½ï¿½Öµ:0,ï¿½ï¿½ï¿½ï¿½
-//    ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//IICÐ´Ò»¸ö×Ö½Ú 
+//devaddr:Æ÷¼þIICµØÖ·
+//reg:¼Ä´æÆ÷µØÖ·
+//data:Êý¾Ý
+//·µ»ØÖµ:0,Õý³£
+//    ÆäËû,´íÎó´úÂë
 uint8_t IIC_Write_Byte(uint8_t addr,uint8_t data)
 {
     IIC_Start();
-    IIC_SendByte((addr<<1)|0); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·+Ð´ï¿½ï¿½ï¿½ï¿½
-    if(IIC_WaitAck())          //ï¿½È´ï¿½Ó¦ï¿½ï¿½
+    IIC_SendByte((addr<<1)|0); //·¢ËÍÆ÷¼þµØÖ·+Ð´ÃüÁî
+    if(IIC_WaitAck())          //µÈ´ýÓ¦´ð
     {
         IIC_Stop();
 				iic_noack=1;
         return 1;
     }
-    IIC_SendByte(data);        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    if(IIC_WaitAck())          //ï¿½È´ï¿½ACK
+    IIC_SendByte(data);        //·¢ËÍÊý¾Ý
+    if(IIC_WaitAck())          //µÈ´ýACK
     {
         IIC_Stop();
 			  iic_noack=1;
@@ -353,22 +354,22 @@ uint8_t IIC_Write_Byte(uint8_t addr,uint8_t data)
     return 0;
 }
 
-//IICï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö½ï¿½ 
-//reg:ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö· 
-//ï¿½ï¿½ï¿½ï¿½Öµ:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//IIC¶ÁÒ»¸ö×Ö½Ú 
+//reg:¼Ä´æÆ÷µØÖ· 
+//·µ»ØÖµ:¶Áµ½µÄÊý¾Ý
 uint8_t IIC_Read_Byte(uint8_t addr,uint8_t reg)
 {
     uint8_t res;
     IIC_Start();
-    IIC_SendByte((addr<<1)|0); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·+Ð´ï¿½ï¿½ï¿½ï¿½
-    IIC_WaitAck();             //ï¿½È´ï¿½Ó¦ï¿½ï¿½
-    IIC_SendByte(reg);         //Ð´ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
-    IIC_WaitAck();             //ï¿½È´ï¿½Ó¦ï¿½ï¿½
+    IIC_SendByte((addr<<1)|0); //·¢ËÍÆ÷¼þµØÖ·+Ð´ÃüÁî
+    IIC_WaitAck();             //µÈ´ýÓ¦´ð
+    IIC_SendByte(reg);         //Ð´¼Ä´æÆ÷µØÖ·
+    IIC_WaitAck();             //µÈ´ýÓ¦´ð
 		IIC_Start();                
-    IIC_SendByte((addr<<1)|1); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    IIC_WaitAck();             //ï¿½È´ï¿½Ó¦ï¿½ï¿½
-    res=IIC_ReadByte(0);		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½nACK  
-    IIC_Stop();                 //ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Í£Ö¹ï¿½ï¿½ï¿½ï¿½
+    IIC_SendByte((addr<<1)|1); //·¢ËÍÆ÷¼þµØÖ·+¶ÁÃüÁî
+    IIC_WaitAck();             //µÈ´ýÓ¦´ð
+    res=IIC_ReadByte(0);		//¶ÁÊý¾Ý,·¢ËÍnACK  
+    IIC_Stop();                 //²úÉúÒ»¸öÍ£Ö¹Ìõ¼þ
     return res;  
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
