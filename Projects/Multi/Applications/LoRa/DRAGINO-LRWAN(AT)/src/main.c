@@ -543,6 +543,9 @@ static void LORA_HasJoined( void )
 
 static void printf_uplink( void )
 {
+	 TimerTime_t ts = TimerGetCurrentTime();
+	 PPRINTF("[%lu] ", ts);
+
 	if(gps_latitude > 0 && gps_longitude > 0 )			
  	{
 	 gps_state_on();
@@ -554,15 +557,11 @@ static void printf_uplink( void )
 	   latitude = gps_latitude*1000000;
 	   latitude = (~latitude) ;
      gps_latitude = (float)(latitude)/1000000;	 
-		 TimerTime_t ts = TimerGetCurrentTime(); 
-		 PPRINTF("[%lu]", ts); 	
      PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
 	 }
 	 else
 	 {
 		latitude = gps_latitude*1000000;
-		TimerTime_t ts = TimerGetCurrentTime(); 
-		PPRINTF("[%lu]", ts); 	
     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);			 
 	 }
 	 if(gps.lgtEW != 'E')
@@ -570,19 +569,16 @@ static void printf_uplink( void )
 	   longitude = gps_longitude*1000000;	 
 	   longitude = (~longitude) ;
 		 gps_longitude = (float)(longitude)/1000000;
-		 TimerTime_t ts = TimerGetCurrentTime(); 
-		 PPRINTF("[%lu]", ts); 	
      PPRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);		 
 	 }
 	 else
 	 {
 		 longitude = gps_longitude*1000000; 	
-		 TimerTime_t ts = TimerGetCurrentTime(); 
-		 PPRINTF("[%lu]", ts); 	
      PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);			 
 	 }
-	 TimerTime_t ts2 = TimerGetCurrentTime(); 
-	 PPRINTF("[%lu]", ts2);  
+
+	 PPRINTF("[%lu]", TimerGetCurrentTime());
+
 	 if(pdop_fixed!=0.0)
 	 {	 
 			PPRINTF("PDOP is %.2f\n\r",pdop_fixed);	
@@ -591,7 +587,6 @@ static void printf_uplink( void )
 	 {
 		  PPRINTF("PDOP is %.2f\n\r",pdop_comp);	
 	 }	
-	 PPRINTF("[%lu]", ts2); 
 	 PPRINTF("Satellite:%2d.%2d\n\r",gps.usedsatnum,gps.allsatnum);
 	 PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit); 
 	 PPRINTF("Fix_Time:%d \n\r",End_times); 
@@ -605,21 +600,17 @@ static void printf_uplink( void )
 	}	
 	else
 	{
-	 TimerTime_t ts = TimerGetCurrentTime(); 
-	 PPRINTF("\n\r[%lu]", ts);
-   if(LP == 2)
+	if (LP == 2)
 	 {
-		 PPRINTF("STOP GPS \n\r");
+		PPRINTF("STOP GPS \n\r");
 	 }
-  else
-		{
-			PPRINTF("GPS NO FIX\n\r");
-		}
+	else
+	 {
+		PPRINTF("GPS NO FIX\n\r");
+	 }
 	}
   if((Alarm_times1<=60)&&(GPS_ALARM == 1)&&(GS == 0))
   {
-	 TimerTime_t ts = TimerGetCurrentTime(); 
-	 PPRINTF("[%lu]", ts); 			
 	 PPRINTF("send NO.%d Alarm data \n\r",Alarm_times);		
 	}	
 	
