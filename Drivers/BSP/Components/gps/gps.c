@@ -972,7 +972,7 @@ uint8_t GPS_INFO_update(void)
     {
       if(GPS_NEMA[i].isupdated == 1)
         {	
-            temp = GPS_parse(GPS_NEMA[i].buffer); 
+            temp |= GPS_parse(GPS_NEMA[i].buffer);
             GPS_NEMA[i].isupdated = 0  ;	
         }       
     }
@@ -1054,7 +1054,7 @@ void GPS_INPUT(void)
 	  FP32 ss;
 
 	  GPS_INFO_update();
-	  if(loggps == 1)
+	  if (GPS_INFO_update() && (loggps > 0))
 	  {
 		GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
 
