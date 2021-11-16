@@ -455,15 +455,22 @@ uint8_t GPS_parse(char *buf)
    static uint8_t msgcount=0,msgid=0,satcount=0;   //解析GSV用到的变量
            //各通道采用的卫星编号    
     uint8_t usedsatcount=0;
+    int valid;
 
     if(buf[0] != '$')   
         return 0;   
    
-
+    if (loggps > 1)
+        PRINTF("GPS buffer: %s", buf);
    
     word=split(left,ASTERISK,&left);   
-    if(check(word,left) != 1)   
-        return 0;   
+    valid = check(word, left);
+
+    if (loggps > 1)
+        PRINTF("%s\r\n", valid == 1 ? "" : " (ignored)");
+
+    if (valid != 1)
+        return 0;
    
     left=word;   
    
