@@ -1057,30 +1057,32 @@ uint8_t GPS_INFO_update(void)
 
 void GPS_INPUT(void)
 {
-	  int dd,mm;
-	  FP32 ss;
+    int dd,mm;
+    FP32 ss;
 
-	  GPS_INFO_update();
-	  if (GPS_INFO_update() && (loggps > 0))
-	  {
-		GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
+    if (GPS_INFO_update() && (loggps > 0))
+    {
+        AT_PRINTF("20%02d-%02d-%02dT", gps.YY, gps.MM, gps.DD);
+        AT_PRINTF("%02d:%02d:%02d ",gps.hh, gps.mm, gps.ss);
+        AT_PRINTF("Sat:%02d/%02d\r\n", gps.usedsatnum, gps.allsatnum);
 
-		AT_PRINTF("%s:%3d %2d'%5.2f ",(gps.latNS == 'N')?"North":"South",dd, mm, ss);
-		AT_PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps.latitude);
+        GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
 
-		GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
-		AT_PRINTF("%s:%3d %2d'%05.2f",(gps.lgtEW == 'E')?"East":"West",dd, mm, ss);
-		AT_PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps.longitude);
-		AT_PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit);
-		AT_PRINTF("Speed:%.1f km/h ",gps.speed);
-		AT_PRINTF("Course:%.1f ",gps.direction);
-		AT_PRINTF("Time:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);
-		AT_PRINTF("Date:20%02d-%d-%d ",gps.YY,gps.MM,gps.DD);
-		AT_PRINTF("Satellite:%2d/%2d",gps.usedsatnum,gps.allsatnum);
-		AT_PRINTF("Mode:%2d\n\r",gps.GSA_mode2);
-		AT_PRINTF("PDOP:%.1f\n\r",pdop_gps);
-	  }
+        AT_PRINTF("%s:%3d %2d'%05.2f", (gps.latNS == 'N')?"North":"South", dd, mm, ss);
+        AT_PRINTF("%s: %.6f ",(gps.latNS == 'N')?"North":"South", gps.latitude);
 
+        GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
+
+        AT_PRINTF("%s:%3d %2d'%05.2f", (gps.lgtEW == 'E')?"East":"West", dd, mm, ss);
+        AT_PRINTF("%s: %.6f\r\n ",(gps.lgtEW == 'E')?"East":"West", gps.longitude);
+
+        AT_PRINTF("Altitude:%.1f%c ", gps.altitude, gps.altitudeunit);
+        AT_PRINTF("Speed:%.1f km/h ", gps.speed);
+        AT_PRINTF("Course:%.1f ", gps.direction);
+        AT_PRINTF("Mode:%2d ", gps.GSA_mode2);
+        AT_PRINTF("PDOP:%.1f\r\n", pdop_gps);
+    }
+    
     switch(gps.FixMode)
     {
         case 0:
