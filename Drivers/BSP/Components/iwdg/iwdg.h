@@ -79,7 +79,7 @@ Maintainer: Miguel Luis and Gregory Cristian
  * @retval None
  */
 void iwdg_init(void);
-uint32_t GetLSIFrequency(void);
+static uint32_t GetLSIFrequency(void);
 void TIMER_IRQHandler(void);
 void IWDG_Refresh(void);
 	 

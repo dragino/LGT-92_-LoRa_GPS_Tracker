@@ -54,7 +54,7 @@
 #include "flash_eraseprogram.h"
 #include "version.h"
 #include "bsp.h"
-#include "GPS.h"
+#include "gps.h"
 #include "low_power_manager.h"
 #include "version.h"
 #include "mpu9250.h"

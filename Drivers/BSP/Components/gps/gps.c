@@ -1,4 +1,5 @@
-#include "GPS.h"  
+#include <ctype.h>
+#include "gps.h"
 #include "at.h"  
 #include "vcom.h"
 #include "delay.h"
