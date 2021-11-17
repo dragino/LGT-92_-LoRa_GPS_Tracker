@@ -68,10 +68,6 @@ extern uint8_t ic_version;
 /* Private define ------------------------------------------------------------*/
 
 /*!
- * Defines the application data transmission duty cycle. 5s, value in [ms].
- */
-#define Firmware    0x04
-/*!
  * LoRaWAN Adaptive Data Rate
  * @note Please note that when ADR is enabled the end-device should be static
  */
@@ -758,7 +754,7 @@ static void Send( void )
 //	}
   
 	printf_uplink();
-  FLAG = (int)(MD<<6 | LON<<5 | Firmware )& 0xFF;
+  FLAG = (int)(MD<<6 | LON<<5 | FIRMWARE_VERSION_PATCH) & 0xFF;
 //	PRINTF("\n\rFLAG=%d  ",FLAG);
 	if(lora_getGPSState() == STATE_GPS_OFF)
 			{
