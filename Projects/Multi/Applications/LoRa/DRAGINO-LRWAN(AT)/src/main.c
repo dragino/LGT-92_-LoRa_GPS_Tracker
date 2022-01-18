@@ -221,8 +221,6 @@ uint32_t SendData=0;
 
 uint16_t batteryLevel_ref;
 
-uint16_t TIMES = 10000;
-
 bool is_lora_joined=0;
 
 bool motion_flags=0;
@@ -1645,7 +1643,7 @@ void lora_send(void)
 					 ENABLE_IRQ();						
 			}	
 			
-			if(Start_times == TIMES)
+			if(Start_times == 10000)
 			{
 				End_times ++;
 				Start_times =0;
@@ -1655,7 +1653,6 @@ void lora_send(void)
 				 {
 					LED0_1;
 				 }
-				TIMES = 10000;
 				DelayMs(200);
 			}
 				
