@@ -427,7 +427,9 @@ int main( void )
   /* Configure the Lora Stack*/
   LORA_Init( &LoRaMainCallbacks, &LoRaParamInit);
 	
-	gps_Identify();	
+  gps_Identify(DATABUFF);
+  Store_Config();
+  memset(DATABUFF, 0, sizeof(DATABUFF));
   
   while( 1 )
   {
@@ -1765,6 +1767,7 @@ void send_data(void)
 		 {							
 			 APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
 		 }
+
 		 TimerInit( &TxTimer, OnTxTimerEvent );
 		 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
 		 Send( );	
@@ -1775,6 +1778,7 @@ void send_data(void)
 		 TimerStart( &IWDGRefreshTimer);					 
 		 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
 		 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
+
 		 if( MD == 0)
 		 {
 				MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
@@ -1783,6 +1787,7 @@ void send_data(void)
 		 {
 				MPU_INT_Init();
 		 }				
+
 		 lora_state_Led();
 		 gps.flag = 1;	 
 		 End_times = 0 ;
@@ -2219,24 +2224,25 @@ void CalibrateToZero(void)
 			yawoffset=0;
 }
 
-void gps_Identify()
+void gps_Identify(char *buff)
 {
-	char *ublox_buff="u-blox";
-	char *l76K_buff="IC=AT6558R";
-	char *l76L_buff="MTKGPS*08";
-	if(strstr(DATABUFF,ublox_buff) != NULL)
+	const char ublox_id[] = "u-blox";
+	const char l76K_id[] = "IC=AT6558R";
+	const char l76L_id[] = "MTKGPS*08";
+
+	if (strstr(buff, ublox_id))
 	{
 		ic_version = 2;
 		pdop_value = 7.00;
-//   AT_PRINTF("gps module:%s\n\r","ublox-MAX7");		
+//		AT_PRINTF("gps module:%s\n\r","ublox-MAX7");
 	}
-	else if(strstr(DATABUFF,l76K_buff) != NULL)
+	else if (strstr(buff, l76K_id))
 	{
-    ic_version = 4;
+		ic_version = 4;
 		pdop_value = 3.00;
 //		AT_PRINTF("gps module:%s\n\r","L76K");
 	}
-	else if(strstr(DATABUFF,l76L_buff) != NULL)
+	else if (strstr(buff, l76L_id))
 	{
 		ic_version = 1;
 		pdop_value = 3.00;
@@ -2248,8 +2254,6 @@ void gps_Identify()
 		ic_version = 0;
 		pdop_value = 3.00;
 	}
-  Store_Config();
-	memset(DATABUFF,0,sizeof(DATABUFF));
 }
 
 void send_exti(void)
