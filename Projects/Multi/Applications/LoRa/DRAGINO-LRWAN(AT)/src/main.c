@@ -541,14 +541,8 @@ static void LORA_HasJoined( void )
 	#endif
 }
 
-static void printf_uplink( void )
+static void normalize_gps_coord( void )
 {
-	 TimerTime_t ts = TimerGetCurrentTime();
-	 PPRINTF("[%lu] ", ts);
-
-	if(gps_latitude > 0 && gps_longitude > 0 )			
- 	{
-	 gps_state_on();
 //	 PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
 //	 PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
    
@@ -597,24 +591,6 @@ static void printf_uplink( void )
    gps.longitude = 0;		
    gps_latitude = 0;
    gps_longitude = 0;	
-	}	
-	else
-	{
-	if (LP == 2)
-	 {
-		PPRINTF("STOP GPS \n\r");
-	 }
-	else
-	 {
-		PPRINTF("GPS NO FIX\n\r");
-	 }
-	}
-  if((Alarm_times1<=60)&&(GPS_ALARM == 1)&&(GS == 0))
-  {
-	 PPRINTF("send NO.%d Alarm data \n\r",Alarm_times);		
-	}	
-	
-   DelayMs(1000);	
 }
 
 static void Send( void )
@@ -738,8 +714,10 @@ static void Send( void )
 	Roll_sum=0;
 	Pitch_sum=0;
 	Yaw_sum = 0;
+
 	TimerTime_t ts = TimerGetCurrentTime(); 	
-//	PPRINTF("\n\r[%lu]", ts); 	
+	PPRINTF("[%lu] ", ts);
+
 	PPRINTF("Roll=%0.2f  ",((int)(Roll1*100))/100.0);
 	PPRINTF("Pitch=%0.2f\r\n",((int)(Pitch1*100))/100.0);
 //	PPRINTF("Yaw=%0.2f\r\n",((int)(Yaw1*100))/100.0);
@@ -750,9 +728,32 @@ static void Send( void )
 //		Altitude = (~Altitude)+1;
 //		AT_PRINTF("Altitude:%.1f%c\r\n ",(float)Altitude/100);
 //	}
-  
-	printf_uplink();
-  FLAG = (int)(MD<<6 | LON<<5 | FIRMWARE_VERSION_PATCH) & 0xFF;
+
+	if(gps_latitude > 0 && gps_longitude > 0)
+	{
+		gps_state_on();
+		normalize_gps_coord();
+	}
+	else
+	{
+	 if (LP == 2)	
+	 {
+		 PPRINTF("STOP GPS \r\n");	
+	 }
+	 else
+	 {
+		 PPRINTF("GPS NO FIX\r\n");	
+	 }
+	}
+
+	if (Alarm_times1 <= 60 && GPS_ALARM == 1 && GS == 0)
+	{
+		PPRINTF("send NO.%d Alarm data \n\r", Alarm_times);
+	}
+
+	DelayMs(1000);
+
+	FLAG = (int)(MD<<6 | LON<<5 | FIRMWARE_VERSION_PATCH) & 0xFF;
 //	PRINTF("\n\rFLAG=%d  ",FLAG);
 	if(lora_getGPSState() == STATE_GPS_OFF)
 			{
