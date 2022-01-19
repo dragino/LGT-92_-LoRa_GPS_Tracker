@@ -78,7 +78,7 @@ Maintainer: Miguel Luis and Gregory Cristian
  /* Internal voltage reference, parameter VREFINT_CAL*/
 #define VREFINT_CAL       ((uint16_t*) ((uint32_t) 0x1FF80078))
 #define LORAWAN_MAX_BAT   254
-extern uint16_t batteryLevel_mV;
+extern uint16_t batteryLevel_ref;
 
 /* Internal temperature sensor: constants data used for indicative values in  */
 /* this example. Refer to device datasheet for min/typ/max values.            */
@@ -344,14 +344,16 @@ uint8_t HW_GetBatteryLevel( void )
 
   if (measuredLevel == 0)
   {
-    batteryLevel_mV = 0;
+    batteryLevelmV = 0;
   }
   else
   {
-    batteryLevel_mV= (( (uint32_t) VDDA_VREFINT_CAL * (*VREFINT_CAL ) )/ measuredLevel);
+    batteryLevelmV= (( (uint32_t) VDDA_VREFINT_CAL * (*VREFINT_CAL ) )/ measuredLevel);
   }
 
-  if (batteryLevel_mV > VDD_BAT)
+  batteryLevel_ref = batteryLevelmV;
+
+  if (batteryLevelmV > VDD_BAT)
   {
     batteryLevel = LORAWAN_MAX_BAT;
   }

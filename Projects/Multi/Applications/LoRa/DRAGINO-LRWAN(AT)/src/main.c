@@ -120,8 +120,6 @@ uint16_t REJOIN_TX_DUTYCYCLE=20;//min
 
 void send_exti(void);
 extern uint8_t mode;
-extern __IO uint16_t AD_code2;
-extern __IO uint16_t AD_code3;
 extern uint8_t inmode;
 extern uint16_t power_time;
 extern bool rx2_flags;
@@ -221,7 +219,7 @@ int32_t latitude;
 
 uint32_t SendData=0;
 
-uint16_t batteryLevel_mV;
+uint16_t batteryLevel_ref;
 
 uint16_t TIMES = 10000;
 
@@ -658,10 +656,10 @@ static void Send( void )
 		Yaw_basic=Yaw;
 		basic_flag=0;
 	}
- if(AD_code3 <= 2840)
+	if (sensor_data.bat_mv <= 2840)
 	{
 		LP = 1;
-		PPRINTF("\n\rBattery voltage too low\r\n");
+		PPRINTF("\r\nBattery voltage too low: %d mV\r\n", sensor_data.bat_mv);
 	}
 	else
 	{

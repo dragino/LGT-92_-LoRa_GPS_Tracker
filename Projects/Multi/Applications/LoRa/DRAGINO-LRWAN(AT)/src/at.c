@@ -106,7 +106,6 @@ uint32_t MLON = 0;
 uint32_t Threshold = 0;
 uint32_t Freq = 0;
 uint32_t loggps =0;
-extern uint16_t AD_code3;
 
 /* External variables --------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -1835,7 +1834,7 @@ ATEerror_t at_BAT_get(const char *param)
 {
 	sensor_t sensor_data;
 	BSP_sensor_Read( &sensor_data );
-	PPRINTF("%d\r\n",AD_code3);
+	PPRINTF("%d\r\n", sensor_data.bat_mv);
 	
   return AT_OK;		
 }
