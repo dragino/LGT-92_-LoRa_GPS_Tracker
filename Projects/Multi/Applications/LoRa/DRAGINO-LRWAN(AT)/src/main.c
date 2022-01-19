@@ -581,10 +581,10 @@ static void normalize_gps_coord( void )
 	 {
 		  PPRINTF("PDOP is %.2f\n\r",pdop_comp);	
 	 }	
-	 PPRINTF("Satellite:%2d.%2d\n\r",gps.usedsatnum,gps.allsatnum);
-	 PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit); 
-	 PPRINTF("Fix_Time:%d \n\r",End_times); 
-	 PPRINTF("data_success\n\r");	 
+	 PPRINTF("Sat:%02d/%02d ", gps.usedsatnum, gps.allsatnum);
+	 PRINTF("Alt:%.1f%c ", gps.altitude, gps.altitudeunit);
+	 PPRINTF("Fix_Time:%d ", End_times);
+	 PPRINTF("data_success\r\n");
 	 pdop_fixed=0.0;
 	 pdop_comp=7.0;	 
    gps.latitude = 0;
