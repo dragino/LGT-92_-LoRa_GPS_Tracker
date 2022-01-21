@@ -509,7 +509,7 @@ uint8_t GPS_parse(char *buf)
              
             sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
             gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;  
-            PRINTF("%s: %.6f度\n\r",gps.latitude);					
+//            AT_PRINTF("%s: %.6f度\n\r",gps.latitude);					
         }   
    
         //南北半球标志    
@@ -534,7 +534,7 @@ uint8_t GPS_parse(char *buf)
             int d,m,mm;   
             sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
             gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
-//            PRINTF("%s: %.6f度\n\r",gps.longitude);					
+//            AT_PRINTF("%s: %.6f度\n\r",gps.longitude);					
         }   
    
         //东西半球标志    
