@@ -63,7 +63,7 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "stm32l0xx_it.h"
 #include "vcom.h"
 #include "gpio_exti.h"
-#include "gps.h"
+#include "GPS.h"  
 #include "lora.h"
 #include "iwdg.h"
 

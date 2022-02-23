@@ -1,5 +1,4 @@
-#include <ctype.h>
-#include "gps.h"
+#include "GPS.h"  
 #include "at.h"  
 #include "vcom.h"
 #include "delay.h"
@@ -534,7 +533,7 @@ uint8_t GPS_parse(char *buf)
             int d,m,mm;   
             sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
             gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
-            PRINTF("%s: %.6f度\n\r",gps.longitude);					
+//            PRINTF("%s: %.6f度\n\r",gps.longitude);					
         }   
    
         //东西半球标志    
@@ -1056,22 +1055,22 @@ void GPS_INPUT(void)
 	  GPS_INFO_update();
 	  if(loggps == 1)
 		{
-    GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
-	
-    AT_PRINTF("%s:%3d %2d'%5.2f ",(gps.latNS == 'N')?"North":"South",dd, mm, ss);
-    AT_PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps.latitude);
+			GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
+		
+			AT_PRINTF("%s:%3d %2d'%5.2f ",(gps.latNS == 'N')?"North":"South",dd, mm, ss);
+			AT_PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps.latitude);
 
-    GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
-    AT_PRINTF("%s:%3d %2d'%05.2f",(gps.lgtEW == 'E')?"East":"West",dd, mm, ss);
-	  AT_PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps.longitude);
-		AT_PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit);
-    AT_PRINTF("Speed:%.1f km/h ",gps.speed);
-    AT_PRINTF("Course:%.1f ",gps.direction);
-    AT_PRINTF("Time:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);   
-    AT_PRINTF("Date:20%02d-%d-%d ",gps.YY,gps.MM,gps.DD); 
-    AT_PRINTF("Satellite:%2d/%2d",gps.usedsatnum,gps.allsatnum);
-		AT_PRINTF("Mode:%2d\n\r",gps.GSA_mode2);
-    AT_PRINTF("PDOP:%.1f\n\r",pdop_gps);				
+			GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
+			AT_PRINTF("%s:%3d %2d'%05.2f",(gps.lgtEW == 'E')?"East":"West",dd, mm, ss);
+			AT_PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps.longitude);
+			AT_PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit);
+			AT_PRINTF("Speed:%.1f km/h ",gps.speed);
+			AT_PRINTF("Course:%.1f ",gps.direction);
+			AT_PRINTF("Time:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);   
+			AT_PRINTF("Date:20%02d-%d-%d ",gps.YY,gps.MM,gps.DD); 
+			AT_PRINTF("Satellite:%2d/%2d",gps.usedsatnum,gps.allsatnum);
+			AT_PRINTF("Mode:%2d\n\r",gps.GSA_mode2);
+			AT_PRINTF("PDOP:%.1f\n\r",pdop_gps);				
 		}
     
     switch(gps.FixMode)
