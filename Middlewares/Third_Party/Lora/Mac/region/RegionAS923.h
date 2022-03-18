@@ -190,6 +190,25 @@
 #error "A default DR higher than DR_5 may lead to connectivity loss."
 #endif
 
+#ifdef AS923_2
+/*!
+ * Second reception window channel frequency definition.
+ */
+#define AS923_RX_WND_2_FREQ                         921400000
+
+/*!
+ * Second reception window channel datarate definition.
+ */
+#define AS923_RX_WND_2_DR                           DR_2
+
+#elif AS923_4
+#define AS923_RX_WND_2_FREQ                         917300000
+
+/*!
+ * Second reception window channel datarate definition.
+ */
+#define AS923_RX_WND_2_DR                           DR_2
+#else
 /*!
  * Second reception window channel frequency definition.
  */
@@ -199,6 +218,7 @@
  * Second reception window channel datarate definition.
  */
 #define AS923_RX_WND_2_DR                           DR_2
+#endif
 
 /*!
  * Maximum number of bands
@@ -211,6 +231,32 @@
  */
 #define AS923_BAND0                                 { 100, AS923_MAX_TX_POWER, 0, 0, 0 } //  1.0 %
 
+#ifdef AS923_2
+/*!
+ * LoRaMac default channel 1
+ * Channel = { Frequency [Hz], RX1 Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
+ */
+#define AS923_LC1                                   { 921400000, 0, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
+
+/*!
+ * LoRaMac default channel 2
+ * Channel = { Frequency [Hz], RX1 Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
+ */
+#define AS923_LC2                                   { 921600000, 0, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
+
+#elif  AS923_4
+/*!
+ * LoRaMac default channel 1
+ * Channel = { Frequency [Hz], RX1 Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
+ */
+#define AS923_LC1                                   { 917300000, 0, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
+
+/*!
+ * LoRaMac default channel 2
+ * Channel = { Frequency [Hz], RX1 Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
+ */
+#define AS923_LC2                                   { 917500000, 0, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
+#else
 /*!
  * LoRaMac default channel 1
  * Channel = { Frequency [Hz], RX1 Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
@@ -222,6 +268,7 @@
  * Channel = { Frequency [Hz], RX1 Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
  */
 #define AS923_LC2                                   { 923400000, 0, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
+#endif
 
 /*!
  * LoRaMac channels which are allowed for the join procedure

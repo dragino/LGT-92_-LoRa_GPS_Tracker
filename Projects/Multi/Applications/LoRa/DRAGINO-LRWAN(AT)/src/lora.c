@@ -622,7 +622,13 @@ void fdr_config(void)
 void region_printf(void)
 {
 #if defined( REGION_AS923 )
-  PPRINTF("AS923\n\r");
+	#ifdef AS923_2
+  PPRINTF("AS923_2\n\r");
+	#elif AS923_4
+  PPRINTF("AS923_4\n\r");
+	#else
+	PPRINTF("AS923\n\r");
+	#endif
 #elif defined( REGION_AU915 )
   PPRINTF("AU915\n\r");
 #elif defined( REGION_CN470 )
