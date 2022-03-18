@@ -21,9 +21,9 @@
           <Cpu>IRAM(0x20000000,0x00005000) IROM(0x08000000,0x00030000) CPUTYPE("Cortex-M0+") CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
-          <FlashDriverDll>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC1000 -FN1 -FF0STM32L0xx_192 -FS08000000 -FL030000 -FP0($$Device:STM32L072CZTx$CMSIS\Flash\STM32L0xx_192.FLM))</FlashDriverDll>
+          <FlashDriverDll>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC1000 -FN1 -FF0STM32L0xx_192 -FS08000000 -FL030000 -FP0($$Device:STM32L072CZTx$Flash\STM32L0xx_192.FLM))</FlashDriverDll>
           <DeviceId>0</DeviceId>
-          <RegisterFile>$$Device:STM32L072CZTx$Drivers\CMSIS\Device\ST\STM32L0xx\Include\stm32l0xx.h</RegisterFile>
+          <RegisterFile>$$Device:STM32L072CZTx$Device\Include\stm32l0xx.h</RegisterFile>
           <MemoryEnv></MemoryEnv>
           <Cmp></Cmp>
           <Asm></Asm>
@@ -33,7 +33,7 @@
           <SLE66CMisc></SLE66CMisc>
           <SLE66AMisc></SLE66AMisc>
           <SLE66LinkerMisc></SLE66LinkerMisc>
-          <SFDFile>$$Device:STM32L072CZTx$CMSIS\SVD\STM32L07x.svd</SFDFile>
+          <SFDFile>$$Device:STM32L072CZTx$SVD\STM32L07x.svd</SFDFile>
           <bCustSvd>0</bCustSvd>
           <UseEnv>0</UseEnv>
           <BinPath></BinPath>
@@ -110,11 +110,11 @@
         </CommonProperty>
         <DllOption>
           <SimDllName>SARMCM3.DLL</SimDllName>
-          <SimDllArguments> -REMAP-MPU </SimDllArguments>
+          <SimDllArguments> -REMAP </SimDllArguments>
           <SimDlgDll>DARMCM1.DLL</SimDlgDll>
           <SimDlgDllArguments>-pCM0+</SimDlgDllArguments>
           <TargetDllName>SARMCM3.DLL</TargetDllName>
-          <TargetDllArguments>-MPU </TargetDllArguments>
+          <TargetDllArguments> </TargetDllArguments>
           <TargetDlgDll>TARMCM1.DLL</TargetDlgDll>
           <TargetDlgDllArguments>-pCM0+</TargetDlgDllArguments>
         </DllOption>
@@ -134,7 +134,7 @@
             <RunIndependent>1</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4101</DriverSelection>
+            <DriverSelection>4103</DriverSelection>
           </Flash1>
           <bUseTDR>0</bUseTDR>
           <Flash2>STLink\ST-LINKIII-KEIL_SWO.dll</Flash2>
@@ -336,7 +336,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--C99</MiscControls>
-              <Define>STM32L072xx, USE_STM32L0XX_NUCLEO,USE_HAL_DRIVER, USE_SHT,REGION_AU915</Define>
+              <Define>STM32L072xx, USE_STM32L0XX_NUCLEO,USE_HAL_DRIVER, USE_SHT,REGION_RU864</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\inc;..\..\..\..\..\..\..\Drivers\BSP\STM32L0xx_Nucleo;..\..\..\..\..\..\..\Drivers\STM32L0xx_HAL_Driver\Inc;..\..\..\..\..\..\..\Drivers\CMSIS\Device\ST\STM32L0xx\Include;..\..\..\..\..\..\..\Drivers\CMSIS\Include;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Crypto;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Mac;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Phy;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Utilities;..\..\..\..\..\..\..\Middlewares\Third_Party\Lora\Core;..\..\..\..\..\..\..\Drivers\BSP\Components\Common;..\..\..\..\..\..\..\Drivers\BSP\Components\sx1276;..\..\..\..\..\..\..\Drivers\BSP\sx1276mb1las;..\..\..\..\..\..\..\Drivers\BSP\Components\flash_eraseprogram;..\..\..\..\..\..\..\Drivers\BSP\Components\gpio_exti;..\..\..\..\..\..\..\Drivers\BSP\Components\iwdg;..\..\..\..\..\..\..\Drivers\BSP\Components\filter;..\..\..\..\..\..\..\Drivers\BSP\Components\gps;..\..\..\..\..\..\..\Drivers\BSP\Components\mpu9250;..\..\..\..\..\..\..\Drivers\BSP\Components\IIC;..\..\..\..\..\..\..\Drivers\BSP\Components\usart</IncludePath>
             </VariousControls>

@@ -91,8 +91,6 @@ extern uint16_t hardware_version;
 
 extern float pdop_value;
 
-uint8_t LP =0;
-
 uint8_t se_mode=0;
 uint8_t fr_mode=0;
 uint32_t Positioning_time = 150;
@@ -1661,15 +1659,9 @@ ATEerror_t at_ftime_set(const char *param)
   {
     return AT_PARAM_ERROR;
   }
-  if(positime == 1203)
-	{
-		LP =2;
-	}
-	else
-	{
-   Positioning_time=positime;
-   LP =0;
-	}
+
+  Positioning_time=positime;
+	
 	return AT_OK;
 }
 ATEerror_t at_ftime_get(const char *param)

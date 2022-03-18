@@ -73,6 +73,7 @@ Maintainer: Miguel Luis, Gregory Cristian and Wael Guibene
 #define LRWAN_VERSION  (uint32_t) 0x00001140  /*3 next hex is i_cube release*/
 #define VERSION   (uint32_t) ( LORA_MAC_VERSION | LRWAN_VERSION | TEST_VERSION )
 #define AT_VERSION_STRING	"v1.6.7"
+#define FIRMWARE_VERSION_PATCH	7
 #define AT_LoRaWan_VERSION_STRING	"DR-LWS-005"
 
 /* Exported types ------------------------------------------------------------*/
