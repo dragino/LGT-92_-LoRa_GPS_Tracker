@@ -177,7 +177,9 @@ uint32_t start_time=0;
 	
 uint32_t AlarmSetTDC;
 
-uint8_t flag_1=1 ,LP = 0;
+uint8_t flag_1=1;
+
+extern uint8_t LP;
 
 uint8_t alarm_flags=0;
 
@@ -606,8 +608,15 @@ static void printf_uplink( void )
 	else
 	{
 	 TimerTime_t ts = TimerGetCurrentTime(); 
-	 PPRINTF("\n\r[%lu]", ts); 	
-	 PPRINTF("GPS NO FIX\n\r");			
+	 PPRINTF("\n\r[%lu]", ts);
+   if(LP == 2)
+	 {
+		 PPRINTF("STOP GPS \n\r");
+	 }
+  else
+		{
+			PPRINTF("GPS NO FIX\n\r");
+		}
 	}
   if((Alarm_times1<=60)&&(GPS_ALARM == 1)&&(GS == 0))
   {
@@ -960,6 +969,14 @@ static void LORA_RxData( lora_AppData_t *AppData )
 				if(AppData->BuffSize == 3)
 				{
 					Positioning_time = ( AppData->Buff[1]<<8 | AppData->Buff[2] );
+					if(Positioning_time == 1203)
+					{
+						LP = 2;
+					}
+				  else
+					{
+					  LP = 0;
+					}
 				}
 				Store_Config();	
 				break;
@@ -1584,7 +1601,7 @@ void lora_send(void)
 				LED0_0;							
 			}
 					
-			else if(LP == 1)
+			else if((LP == 1)||(LP == 2))
       {
 				gps_state_no();
 			  if(motion_flags==1)

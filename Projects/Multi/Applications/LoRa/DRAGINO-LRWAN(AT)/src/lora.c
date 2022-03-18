@@ -159,6 +159,7 @@ extern uint32_t Threshold ;
 extern uint32_t Freq ;
 extern uint32_t GS;
 extern uint8_t rx_flags;
+extern uint8_t LP ;
 extern int user_key_exti_flag;
 uint16_t dr_power =0;
 
@@ -1201,6 +1202,8 @@ void Store_Config(void)
 
 	s_config[config_count++]=(fr_mode<<8)|(se_mode);
 	
+	s_config[config_count++]=LP;
+
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);//Page800 
 	FLASH_program(FLASH_USER_START_ADDR_CONFIG,s_config,config_count);//store config
 	
@@ -1209,7 +1212,7 @@ void Store_Config(void)
 
 void Read_Config(void)
 {
-	uint32_t star_address=0,r_config[27],r_key[17];
+	uint32_t star_address=0,r_config[28],r_key[17];
 	
 	star_address=FLASH_USER_START_ADDR_KEY;
 	/* read key*/
@@ -1228,7 +1231,7 @@ void Read_Config(void)
 	
 	
 	star_address=FLASH_USER_START_ADDR_CONFIG;
-	for(int i=0;i<27;i++)
+	for(int i=0;i<28;i++)
 	{
 	  r_config[i]=FLASH_read(star_address);
 		star_address+=4;
@@ -1385,7 +1388,9 @@ void Read_Config(void)
 
 	fr_mode=(r_config[25]>>8)&0xFF;
 	
-	se_mode=r_config[26]&0xFF;	
+	se_mode=r_config[26]&0xFF;
+
+	LP=r_config[27]&0xFF;
 	
 }
 
