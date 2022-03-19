@@ -191,8 +191,8 @@ $(BUILDDIR):
 size: $(BUILDDIR)/$(NAME).elf
 	$(SZ) --format=SysV --radix=16 $^ | egrep "^.text|^.data|^.bss"
 
-OPENOCD = openocd -f interface/stlink-v2.cfg -c "transport select hla_swd" \
-           -f target/stm32l0.cfg
+OPENOCD = openocd -f interface/stlink.cfg -c "transport select hla_swd" \
+           -f target/stm32l0_dual_bank.cfg
 
 flash: $(BUILDDIR)/$(NAME).hex
 	$(OPENOCD) -c "program $< verify reset exit"
