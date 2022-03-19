@@ -197,5 +197,13 @@ OPENOCD = openocd -f interface/stlink.cfg -c "transport select hla_swd" \
 flash: $(BUILDDIR)/$(NAME).hex
 	$(OPENOCD) -c "program $< verify reset exit"
 
+SETTINGS = settings.dat
+
+read_settings:
+	$(OPENOCD) -c "init" -c "reset init" -c "dump_image $(SETTINGS) 0x8019000 512" -c "shutdown"
+
+write_settings:
+	$(OPENOCD) -c "init" -c "reset init" -c "load_image $(SETTINGS) 0x8019000 512" -c "shutdown"
+
 clean:
 	rm -f $(OBJS) $(BUILDDIR)/$(NAME).hex $(BUILDDIR)/$(NAME).elf
