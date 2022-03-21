@@ -543,54 +543,50 @@ static void LORA_HasJoined( void )
 
 static void normalize_gps_coord( void )
 {
-//	 PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
-//	 PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
-   
+	 // PPRINTF("%s: %.6f ", (gps.latNS == 'N')?"South":"North", gps_latitude);
+	 // PPRINTF("%s: %.6f ", (gps.lgtEW == 'E')?"East":"West", gps_longitude);
+
 	 if(gps.latNS != 'N')
 	 {
 	   latitude = gps_latitude*1000000;
 	   latitude = (~latitude) ;
-     gps_latitude = (float)(latitude)/1000000;	 
-     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
+	   gps_latitude = (float)(latitude)/1000000;
 	 }
 	 else
 	 {
-		latitude = gps_latitude*1000000;
-    PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);			 
+	   latitude = gps_latitude*1000000;
 	 }
+
 	 if(gps.lgtEW != 'E')
 	 {
-	   longitude = gps_longitude*1000000;	 
+	   longitude = gps_longitude*1000000;
 	   longitude = (~longitude) ;
-		 gps_longitude = (float)(longitude)/1000000;
-     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);		 
+	   gps_longitude = (float)(longitude)/1000000;
 	 }
 	 else
 	 {
-		 longitude = gps_longitude*1000000; 	
-     PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);			 
+	   longitude = gps_longitude*1000000;
 	 }
 
-	 PPRINTF("[%lu]", TimerGetCurrentTime());
-
 	 if(pdop_fixed!=0.0)
-	 {	 
-			PPRINTF("PDOP is %.2f\n\r",pdop_fixed);	
+	 {
+	   PPRINTF("PDOP is %.2f\r\n",pdop_fixed);
 	 }
 	 else if(pdop_comp!=7.0)
 	 {
-		  PPRINTF("PDOP is %.2f\n\r",pdop_comp);	
-	 }	
+	   PPRINTF("PDOP is %.2f\r\n",pdop_comp);
+	 }
+
 	 PPRINTF("Sat:%02d/%02d ", gps.usedsatnum, gps.allsatnum);
-	 PRINTF("Alt:%.1f%c ", gps.altitude, gps.altitudeunit);
+	 PPRINTF("Alt:%.1f%c ", gps.altitude, gps.altitudeunit);
 	 PPRINTF("Fix_Time:%d ", End_times);
 	 PPRINTF("data_success\r\n");
 	 pdop_fixed=0.0;
-	 pdop_comp=7.0;	 
-   gps.latitude = 0;
-   gps.longitude = 0;		
-   gps_latitude = 0;
-   gps_longitude = 0;	
+	 pdop_comp=7.0;
+	 gps.latitude = 0;
+	 gps.longitude = 0;
+	 gps_latitude = 0;
+	 gps_longitude = 0;
 }
 
 static void Send( void )
