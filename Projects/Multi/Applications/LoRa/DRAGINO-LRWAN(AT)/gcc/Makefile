@@ -165,7 +165,7 @@ CFLAGS += -ffunction-sections
 LDFLAGS += -Wl,--gc-sections
 
 LDFLAGS += -T gcc-stm32l072cz.ld
-LDLIBS += -specs=nano.specs -specs=nosys.specs -lm
+LDLIBS += -specs=nano.specs -specs=nosys.specs -lm -u _printf_float
 
 CFLAGS += -DSTM32L072xx -DUSE_STM32L0XX_NUCLEO -DUSE_HAL_DRIVER -DUSE_SHT -DREGION_$(REGION)
 
