@@ -1064,16 +1064,16 @@ void GPS_INPUT(void)
     {
         AT_PRINTF("20%02d-%02d-%02dT", gps.YY, gps.MM, gps.DD);
         AT_PRINTF("%02d:%02d:%02d ",gps.hh, gps.mm, gps.ss);
-        AT_PRINTF("Sat:%02d/%02d\r\n", gps.usedsatnum, gps.allsatnum);
+        AT_PRINTF("Sat:%02d/%02d ", gps.usedsatnum, gps.allsatnum);
 
         GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
 
-        AT_PRINTF("%s:%3d %2d'%05.2f", (gps.latNS == 'N')?"North":"South", dd, mm, ss);
+        // AT_PRINTF("%s:%3d %2d'%05.2f ", (gps.latNS == 'N')?"North":"South", dd, mm, ss);
         AT_PRINTF("%s: %.6f ",(gps.latNS == 'N')?"North":"South", gps.latitude);
 
         GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
 
-        AT_PRINTF("%s:%3d %2d'%05.2f", (gps.lgtEW == 'E')?"East":"West", dd, mm, ss);
+        // AT_PRINTF("%s:%3d %2d'%05.2f", (gps.lgtEW == 'E')?"East":"West", dd, mm, ss);
         AT_PRINTF("%s: %.6f\r\n ",(gps.lgtEW == 'E')?"East":"West", gps.longitude);
 
         AT_PRINTF("Altitude:%.1f%c ", gps.altitude, gps.altitudeunit);
