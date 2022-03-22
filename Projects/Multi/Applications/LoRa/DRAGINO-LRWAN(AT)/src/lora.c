@@ -54,7 +54,7 @@
 #include "flash_eraseprogram.h"
 #include "version.h"
 #include "bsp.h"
-#include "GPS.h"
+#include "gps.h"
 #include "low_power_manager.h"
 #include "version.h"
 #include "mpu9250.h"
@@ -626,10 +626,10 @@ void region_printf(void)
 	#ifdef AS923_2
   PPRINTF("AS923_2\n\r");
 	#elif AS923_4
-  PPRINTF("AS923_4\n\r");	
+  PPRINTF("AS923_4\n\r");
 	#else
 	PPRINTF("AS923\n\r");
-	#endif	
+	#endif
 #elif defined( REGION_AU915 )
   PPRINTF("AU915\n\r");
 #elif defined( REGION_CN470 )
@@ -1203,7 +1203,7 @@ void Store_Config(void)
 	s_config[config_count++]=(fr_mode<<8)|(se_mode);
 	
 	s_config[config_count++]=LP;
-	
+
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);//Page800 
 	FLASH_program(FLASH_USER_START_ADDR_CONFIG,s_config,config_count);//store config
 	
@@ -1389,8 +1389,8 @@ void Read_Config(void)
 	fr_mode=(r_config[25]>>8)&0xFF;
 	
 	se_mode=r_config[26]&0xFF;
-	
-	LP=r_config[27]&0xFF;	
+
+	LP=r_config[27]&0xFF;
 	
 }
 

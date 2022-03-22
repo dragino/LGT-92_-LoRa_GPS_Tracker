@@ -58,7 +58,7 @@
 #include "gpio_exti.h"
 #include "iwdg.h"
 #include "delay.h"
-#include "GPS.h"  
+#include "gps.h"
 #include "bsp_usart2.h"
 #include "IIC.h"
 #include "mpu9250.h"
@@ -67,10 +67,6 @@ extern uint8_t ic_version;
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
-/*!
- * Defines the application data transmission duty cycle. 5s, value in [ms].
- */
-#define Firmware    0x04
 /*!
  * LoRaWAN Adaptive Data Rate
  * @note Please note that when ADR is enabled the end-device should be static
@@ -613,15 +609,14 @@ static void printf_uplink( void )
 	{
 	 TimerTime_t ts = TimerGetCurrentTime(); 
 	 PPRINTF("\n\r[%lu]", ts);
-   if(LP == 2)	
+   if(LP == 2)
 	 {
-		 PPRINTF("STOP GPS \n\r");	
+		 PPRINTF("STOP GPS \n\r");
 	 }
   else
 		{
-			PPRINTF("GPS NO FIX\n\r");	
-		}	
-	 		
+			PPRINTF("GPS NO FIX\n\r");
+		}
 	}
   if((Alarm_times1<=60)&&(GPS_ALARM == 1)&&(GS == 0))
   {
@@ -768,7 +763,7 @@ static void Send( void )
 //	}
   
 	printf_uplink();
-  FLAG = (int)(MD<<6 | LON<<5 | Firmware )& 0xFF;
+  FLAG = (int)(MD<<6 | LON<<5 | FIRMWARE_VERSION_PATCH) & 0xFF;
 //	PRINTF("\n\rFLAG=%d  ",FLAG);
 	if(lora_getGPSState() == STATE_GPS_OFF)
 			{

@@ -256,7 +256,7 @@
  * Channel = { Frequency [Hz], RX1 Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
  */
 #define AS923_LC2                                   { 917500000, 0, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
-#else 
+#else
 /*!
  * LoRaMac default channel 1
  * Channel = { Frequency [Hz], RX1 Frequency [Hz], { ( ( DrMax << 4 ) | DrMin ) }, Band }
