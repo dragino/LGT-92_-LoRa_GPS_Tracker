@@ -1,4 +1,5 @@
-#include "GPS.h"  
+#include <ctype.h>
+#include "gps.h"
 #include "at.h"  
 #include "vcom.h"
 #include "delay.h"
@@ -14,7 +15,6 @@
   char lasttime[20]; 
   _Bool isrunning; 
   uint32_t   isFirmwareUpdate = 0; 
-	int count =0;
 	uint8_t gpspower_flag=0;
 	float pdop_gps;
 	char *txdata353;
@@ -402,7 +402,7 @@ char *split(char *buf,char s,char **left)
     }   
    
  
-    while(*p != 0 && *p != s && *p != '\r' && *p != '\n')   
+    while(*p != 0 && *p != s)
     {   
         p++;   
     }   
@@ -417,6 +417,8 @@ char *split(char *buf,char s,char **left)
         *left=NULL;   
     }   
    
+    if (*ret == '\0')
+      ret = NULL;
     return ret;   
 }   
    
@@ -426,9 +428,8 @@ int check(char *sentence,char *cksum)
 {   
 
     unsigned char *p=(unsigned char *)sentence,sum=0/*,ts*/; 
-    if(sentence == NULL || cksum == NULL)   
+    if (sentence == NULL || cksum == NULL || cksum[0] == '\0' || cksum[1] == '\0')
         return 0;   
-   
   
     for(; *p != 0; p++)   
     {   
@@ -448,21 +449,27 @@ int check(char *sentence,char *cksum)
 uint8_t GPS_parse(char *buf)   
 {   
     //printf("%s\n",buf);    
-   int d,m,mm;
     uint8_t i;
    char *word,*left=buf+1;    
    static uint8_t msgcount=0,msgid=0,satcount=0;   //解析GSV用到的变量
            //各通道采用的卫星编号    
     uint8_t usedsatcount=0;
+    int valid;
 
     if(buf[0] != '$')   
         return 0;   
    
-
+    if (loggps > 1)
+        PPRINTF("GPS buffer: %s", buf);
    
     word=split(left,ASTERISK,&left);   
-    if(check(word,left) != 1)   
-        return 0;   
+    valid = check(word, left);
+
+    if (loggps > 1)
+        PPRINTF("%s\r\n", valid == 1 ? "" : " (ignored)");
+
+    if (valid != 1)
+        return 0;
    
     left=word;   
    
@@ -471,6 +478,7 @@ uint8_t GPS_parse(char *buf)
     { 
 			gps_setflags=1;
 			gpspower_flag=0;			
+			return 1;
 		}				
 		
     if(!strcmp(word,"GNRRMC"))   
@@ -505,10 +513,13 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GNRMC3:%s\n\r",word);				
         if(word != NULL)   
         {   
-             
-            sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
-            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;  
-            PRINTF("%s: %.6f度\n\r",gps.latitude);					
+            int d,m,mm,ret;
+            ret = sscanf(word,"%2d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
+//            AT_PRINTF("%s: %.6f度\n\r",gps.latitude);					
         }   
    
         //南北半球标志    
@@ -530,10 +541,13 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GNRMC5:%s\n\r",word);				 
         if(word != NULL)   
         {   
-            int d,m,mm;   
-            sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
-            gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
-//            PRINTF("%s: %.6f度\n\r",gps.longitude);					
+            int d,m,mm,ret;
+            ret = sscanf(word,"%3d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
+//            AT_PRINTF("%s: %.6f度\n\r",gps.longitude);					
         }   
    
         //东西半球标志    
@@ -605,9 +619,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GPRMC2:%s\n\r",word);				
         if(word != NULL)   
         {   
-             
-            sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
-            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;   
+            int d,m,mm,ret;
+            ret = sscanf(word,"%2d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
         }   
    
         //南北半球标志    
@@ -629,9 +646,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GPRMC4:%s\n\r",word);				 
         if(word != NULL)   
         {   
-            int d,m,mm;   
-            sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
-            gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;   
+            int d,m,mm,ret;
+            ret = sscanf(word,"%3d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
         }   
    
         //东西半球标志    
@@ -691,9 +711,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GPGGA1:%s\n\r",word);				
         if(word != NULL)   
         {   
-            int d,m,mm;   
-            sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
-            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;   
+            int d,m,mm,ret;
+            ret = sscanf(word,"%2d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
         }   
    
         //南北半球标志    
@@ -714,9 +737,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GPGGA3:%s\n\r",word);				 
         if(word != NULL)   
         {   
-            int d,m,mm;   
-            sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
-            gps.longitude=(float)d+(float)m/60.0+(float)mm/600000.0;   
+            int d,m,mm,ret;
+            ret = sscanf(word,"%3d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.longitude=(float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
         }   
    
         //东西半球标志    
@@ -908,7 +934,9 @@ uint8_t GPS_parse(char *buf)
         {   
             gps.VDOP=(float)my_atof(word);   
         }       
-    }  
+    } else {
+        return 0; /* no matches */
+    }
 
     if(gps.latitude > 90.0)
       gps.latitude = 0.0;
@@ -939,6 +967,7 @@ struct {
       return;
     if(buffer == '$')
       { 			
+         GPS_NEMA[NEMA_count].buffer[char_count] = '\0';
          GPS_NEMA[NEMA_count].isupdated = 1;  //将上面一条语句打上更新标志
          NEMA_count++;
          if(NEMA_count > (NEMA_NUM_MAX-1))
@@ -950,18 +979,13 @@ struct {
          char_count = 1;
 
        }
-			else
-				{
+      else
+        {
+         if (buffer == '\r' || buffer == '\n')
+           buffer = '\0';
          if(char_count < NEMA_CHAR_MAX-1)
           GPS_NEMA[NEMA_count].buffer[char_count++] = buffer;
         }
-			count ++;	
-		if(count == 255)
-		{
-			GPS_NEMA[NEMA_count].isupdated = 0  ;
-			GPS_NEMA[NEMA_count].buffer[char_count++] = 0  ;
-			count = 0;
-		}
   }
 uint8_t GPS_INFO_update(void)
 { 
@@ -971,7 +995,7 @@ uint8_t GPS_INFO_update(void)
     {
       if(GPS_NEMA[i].isupdated == 1)
         {	
-            temp = GPS_parse(GPS_NEMA[i].buffer); 
+            temp |= GPS_parse(GPS_NEMA[i].buffer);
             GPS_NEMA[i].isupdated = 0  ;	
         }       
     }
@@ -1049,29 +1073,31 @@ uint8_t GPS_INFO_update(void)
 
 void GPS_INPUT(void)
 {
-	  int dd,mm;
+    int dd,mm;
     FP32 ss;
-//	
-	  GPS_INFO_update();
-	  if(loggps == 1)
-		{
-			GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
-		
-			AT_PRINTF("%s:%3d %2d'%5.2f ",(gps.latNS == 'N')?"North":"South",dd, mm, ss);
-			AT_PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps.latitude);
 
-			GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
-			AT_PRINTF("%s:%3d %2d'%05.2f",(gps.lgtEW == 'E')?"East":"West",dd, mm, ss);
-			AT_PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps.longitude);
-			AT_PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit);
-			AT_PRINTF("Speed:%.1f km/h ",gps.speed);
-			AT_PRINTF("Course:%.1f ",gps.direction);
-			AT_PRINTF("Time:%2d:%02d:%02d ",(gps.hh<16)?gps.hh+8:gps.hh-16,gps.mm,gps.ss);   
-			AT_PRINTF("Date:20%02d-%d-%d ",gps.YY,gps.MM,gps.DD); 
-			AT_PRINTF("Satellite:%2d/%2d",gps.usedsatnum,gps.allsatnum);
-			AT_PRINTF("Mode:%2d\n\r",gps.GSA_mode2);
-			AT_PRINTF("PDOP:%.1f\n\r",pdop_gps);				
-		}
+    if (GPS_INFO_update() && (loggps > 0))
+    {
+        AT_PRINTF("20%02d-%02d-%02dT", gps.YY, gps.MM, gps.DD);
+        AT_PRINTF("%02d:%02d:%02d ",gps.hh, gps.mm, gps.ss);
+        AT_PRINTF("Sat:%02d/%02d ", gps.usedsatnum, gps.allsatnum);
+
+        GPS_DegreeToDMS(gps.latitude, &dd, &mm,&ss);
+
+        // AT_PRINTF("%s:%3d %2d'%05.2f ", (gps.latNS == 'N')?"North":"South", dd, mm, ss);
+        AT_PRINTF("%s: %.6f ",(gps.latNS == 'N')?"North":"South", gps.latitude);
+
+        GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
+
+        // AT_PRINTF("%s:%3d %2d'%05.2f", (gps.lgtEW == 'E')?"East":"West", dd, mm, ss);
+        AT_PRINTF("%s: %.6f ",(gps.lgtEW == 'E')?"East":"West", gps.longitude);
+
+        AT_PRINTF("PDOP:%.1f\r\n", pdop_gps);
+        AT_PRINTF("Altitude:%.1f%c ", gps.altitude, gps.altitudeunit);
+        AT_PRINTF("Speed:%.1f km/h ", gps.speed);
+        AT_PRINTF("Course:%.1f ", gps.direction);
+        AT_PRINTF("Mode:%2d\r\n", gps.GSA_mode2);
+    }
     
     switch(gps.FixMode)
     {

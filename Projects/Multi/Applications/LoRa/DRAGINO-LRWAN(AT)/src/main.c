@@ -58,7 +58,7 @@
 #include "gpio_exti.h"
 #include "iwdg.h"
 #include "delay.h"
-#include "GPS.h"  
+#include "gps.h"
 #include "bsp_usart2.h"
 #include "IIC.h"
 #include "mpu9250.h"
@@ -67,10 +67,6 @@ extern uint8_t ic_version;
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
-/*!
- * Defines the application data transmission duty cycle. 5s, value in [ms].
- */
-#define Firmware    0x04
 /*!
  * LoRaWAN Adaptive Data Rate
  * @note Please note that when ADR is enabled the end-device should be static
@@ -124,8 +120,6 @@ uint16_t REJOIN_TX_DUTYCYCLE=20;//min
 
 void send_exti(void);
 extern uint8_t mode;
-extern __IO uint16_t AD_code2;
-extern __IO uint16_t AD_code3;
 extern uint8_t inmode;
 extern uint16_t power_time;
 extern bool rx2_flags;
@@ -225,9 +219,7 @@ int32_t latitude;
 
 uint32_t SendData=0;
 
-uint16_t batteryLevel_mV;
-
-uint16_t TIMES = 10000;
+uint16_t batteryLevel_ref;
 
 bool is_lora_joined=0;
 
@@ -431,7 +423,9 @@ int main( void )
   /* Configure the Lora Stack*/
   LORA_Init( &LoRaMainCallbacks, &LoRaParamInit);
 	
-	gps_Identify();	
+  gps_Identify(DATABUFF);
+  Store_Config();
+  memset(DATABUFF, 0, sizeof(DATABUFF));
   
   while( 1 )
   {
@@ -547,90 +541,52 @@ static void LORA_HasJoined( void )
 	#endif
 }
 
-static void printf_uplink( void )
+static void normalize_gps_coord( void )
 {
-	if(gps_latitude > 0 && gps_longitude > 0 )			
- 	{
-	 gps_state_on();
-//	 PRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"South":"North",gps_latitude);
-//	 PRINTF("%s: %.6f\n\r ",(gps.lgtEW == 'E')?"East":"West",gps_longitude);
-   
+	 // PPRINTF("%s: %.6f ", (gps.latNS == 'N')?"South":"North", gps_latitude);
+	 // PPRINTF("%s: %.6f ", (gps.lgtEW == 'E')?"East":"West", gps_longitude);
+
 	 if(gps.latNS != 'N')
 	 {
 	   latitude = gps_latitude*1000000;
 	   latitude = (~latitude) ;
-     gps_latitude = (float)(latitude)/1000000;	 
-		 TimerTime_t ts = TimerGetCurrentTime(); 
-		 PPRINTF("[%lu]", ts); 	
-     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);		 
+	   gps_latitude = (float)(latitude)/1000000;
 	 }
 	 else
 	 {
-		latitude = gps_latitude*1000000;
-		TimerTime_t ts = TimerGetCurrentTime(); 
-		PPRINTF("[%lu]", ts); 	
-    PPRINTF("%s: %.6f\n\r",(gps.latNS == 'N')?"North":"South",gps_latitude);			 
+	   latitude = gps_latitude*1000000;
 	 }
+
 	 if(gps.lgtEW != 'E')
 	 {
-	   longitude = gps_longitude*1000000;	 
+	   longitude = gps_longitude*1000000;
 	   longitude = (~longitude) ;
-		 gps_longitude = (float)(longitude)/1000000;
-		 TimerTime_t ts = TimerGetCurrentTime(); 
-		 PPRINTF("[%lu]", ts); 	
-     PPRINTF("%s: %.6f\n\r",(gps.latNS == 'E')?"East":"West",gps_longitude);		 
+	   gps_longitude = (float)(longitude)/1000000;
 	 }
 	 else
 	 {
-		 longitude = gps_longitude*1000000; 	
-		 TimerTime_t ts = TimerGetCurrentTime(); 
-		 PPRINTF("[%lu]", ts); 	
-     PPRINTF("%s: %.6f\n\r",(gps.lgtEW == 'E')?"East":"West",gps_longitude);			 
+	   longitude = gps_longitude*1000000;
 	 }
-	 TimerTime_t ts2 = TimerGetCurrentTime(); 
-	 PPRINTF("[%lu]", ts2);  
+
 	 if(pdop_fixed!=0.0)
-	 {	 
-			PPRINTF("PDOP is %.2f\n\r",pdop_fixed);	
+	 {
+	   PPRINTF("PDOP is %.2f\r\n",pdop_fixed);
 	 }
 	 else if(pdop_comp!=7.0)
 	 {
-		  PPRINTF("PDOP is %.2f\n\r",pdop_comp);	
-	 }	
-	 PPRINTF("[%lu]", ts2); 
-	 PPRINTF("Satellite:%2d.%2d\n\r",gps.usedsatnum,gps.allsatnum);
-	 PRINTF("Altitude:%.1f%c ",gps.altitude,gps.altitudeunit); 
-	 PPRINTF("Fix_Time:%d \n\r",End_times); 
-	 PPRINTF("data_success\n\r");	 
-	 pdop_fixed=0.0;
-	 pdop_comp=7.0;	 
-   gps.latitude = 0;
-   gps.longitude = 0;		
-   gps_latitude = 0;
-   gps_longitude = 0;	
-	}	
-	else
-	{
-	 TimerTime_t ts = TimerGetCurrentTime(); 
-	 PPRINTF("\n\r[%lu]", ts);
-   if(LP == 2)	
-	 {
-		 PPRINTF("STOP GPS \n\r");	
+	   PPRINTF("PDOP is %.2f\r\n",pdop_comp);
 	 }
-  else
-		{
-			PPRINTF("GPS NO FIX\n\r");	
-		}	
-	 		
-	}
-  if((Alarm_times1<=60)&&(GPS_ALARM == 1)&&(GS == 0))
-  {
-	 TimerTime_t ts = TimerGetCurrentTime(); 
-	 PPRINTF("[%lu]", ts); 			
-	 PPRINTF("send NO.%d Alarm data \n\r",Alarm_times);		
-	}	
-	
-   DelayMs(1000);	
+
+	 PPRINTF("Sat:%02d/%02d ", gps.usedsatnum, gps.allsatnum);
+	 PPRINTF("Alt:%.1f%c ", gps.altitude, gps.altitudeunit);
+	 PPRINTF("Fix_Time:%d ", End_times);
+	 PPRINTF("data_success\r\n");
+	 pdop_fixed=0.0;
+	 pdop_comp=7.0;
+	 gps.latitude = 0;
+	 gps.longitude = 0;
+	 gps_latitude = 0;
+	 gps_longitude = 0;
 }
 
 static void Send( void )
@@ -661,10 +617,10 @@ static void Send( void )
 		Yaw_basic=Yaw;
 		basic_flag=0;
 	}
- if(AD_code3 <= 2840)
+	if (sensor_data.bat_mv <= 2840)
 	{
 		LP = 1;
-		PPRINTF("\n\rBattery voltage too low\r\n");
+		PPRINTF("\r\nBattery voltage too low: %d mV\r\n", sensor_data.bat_mv);
 	}
 	else
 	{
@@ -754,8 +710,10 @@ static void Send( void )
 	Roll_sum=0;
 	Pitch_sum=0;
 	Yaw_sum = 0;
+
 	TimerTime_t ts = TimerGetCurrentTime(); 	
-//	PPRINTF("\n\r[%lu]", ts); 	
+	PPRINTF("[%lu] ", ts);
+
 	PPRINTF("Roll=%0.2f  ",((int)(Roll1*100))/100.0);
 	PPRINTF("Pitch=%0.2f\r\n",((int)(Pitch1*100))/100.0);
 //	PPRINTF("Yaw=%0.2f\r\n",((int)(Yaw1*100))/100.0);
@@ -766,9 +724,32 @@ static void Send( void )
 //		Altitude = (~Altitude)+1;
 //		AT_PRINTF("Altitude:%.1f%c\r\n ",(float)Altitude/100);
 //	}
-  
-	printf_uplink();
-  FLAG = (int)(MD<<6 | LON<<5 | Firmware )& 0xFF;
+
+	if(gps_latitude > 0 && gps_longitude > 0)
+	{
+		gps_state_on();
+		normalize_gps_coord();
+	}
+	else
+	{
+	 if (LP == 2)	
+	 {
+		 PPRINTF("STOP GPS \r\n");	
+	 }
+	 else
+	 {
+		 PPRINTF("GPS NO FIX\r\n");	
+	 }
+	}
+
+	if (Alarm_times1 <= 60 && GPS_ALARM == 1 && GS == 0)
+	{
+		PPRINTF("send NO.%d Alarm data \n\r", Alarm_times);
+	}
+
+	DelayMs(1000);
+
+	FLAG = (int)(MD<<6 | LON<<5 | FIRMWARE_VERSION_PATCH) & 0xFF;
 //	PRINTF("\n\rFLAG=%d  ",FLAG);
 	if(lora_getGPSState() == STATE_GPS_OFF)
 			{
@@ -887,8 +868,8 @@ static void LORA_RxData( lora_AppData_t *AppData )
 				}
 				else if(AppData->Buff[1]==0xFE)  //---->AT+FDR
 				{			
-					FLASH_erase(0x8018F80);//page 799					
-				  FLASH_program_on_addr(0x8018F80,0x12);	
+					FLASH_erase(FLASH_USER_START_ADDR_FDR);
+				  FLASH_program_on_addr(FLASH_USER_START_ADDR_FDR, 0x12);
           FLASH_erase(FLASH_USER_START_ADDR_CONFIG);//Page800 					
 					atz_flags=1;						
 					rxpr_flags=1;								
@@ -1345,7 +1326,7 @@ static void timing(void)
 				mpuint_flags=0;		
 			}
 			
-			else if(temp_time-start_time>=300000)
+			else if (temp_time-start_time >= APP_TX_DUTYCYCLE)
 			{			
 				APP_TX_DUTYCYCLE=Keep_TX_DUTYCYCLE;								
 				TimerInit( &TxTimer, OnTxTimerEvent );
@@ -1650,7 +1631,7 @@ void lora_send(void)
 					 ENABLE_IRQ();						
 			}	
 			
-			if(Start_times == TIMES)
+			if(Start_times == 10000)
 			{
 				End_times ++;
 				Start_times =0;
@@ -1660,7 +1641,6 @@ void lora_send(void)
 				 {
 					LED0_1;
 				 }
-				TIMES = 10000;
 				DelayMs(200);
 			}
 				
@@ -1770,6 +1750,7 @@ void send_data(void)
 		 {							
 			 APP_TX_DUTYCYCLE=Server_TX_DUTYCYCLE;
 		 }
+
 		 TimerInit( &TxTimer, OnTxTimerEvent );
 		 TimerSetValue( &TxTimer,  APP_TX_DUTYCYCLE);
 		 Send( );	
@@ -1780,6 +1761,7 @@ void send_data(void)
 		 TimerStart( &IWDGRefreshTimer);					 
 		 LPM_SetOffMode(LPM_APPLI_Id ,LPM_Disable );
 		 PPRINTF("Update Interval: %d ms\n\r",APP_TX_DUTYCYCLE);
+
 		 if( MD == 0)
 		 {
 				MPU_Write_Byte(MPU9250_ADDR,0x6B,0X40);//MPU sleep
@@ -1788,6 +1770,7 @@ void send_data(void)
 		 {
 				MPU_INT_Init();
 		 }				
+
 		 lora_state_Led();
 		 gps.flag = 1;	 
 		 End_times = 0 ;
@@ -2224,24 +2207,25 @@ void CalibrateToZero(void)
 			yawoffset=0;
 }
 
-void gps_Identify()
+void gps_Identify(char *buff)
 {
-	char *ublox_buff="u-blox";
-	char *l76K_buff="IC=AT6558R";
-	char *l76L_buff="MTKGPS*08";
-	if(strstr(DATABUFF,ublox_buff) != NULL)
+	const char ublox_id[] = "u-blox";
+	const char l76K_id[] = "IC=AT6558R";
+	const char l76L_id[] = "MTKGPS*08";
+
+	if (strstr(buff, ublox_id))
 	{
 		ic_version = 2;
 		pdop_value = 7.00;
-//   AT_PRINTF("gps module:%s\n\r","ublox-MAX7");		
+//		AT_PRINTF("gps module:%s\n\r","ublox-MAX7");
 	}
-	else if(strstr(DATABUFF,l76K_buff) != NULL)
+	else if (strstr(buff, l76K_id))
 	{
-    ic_version = 4;
+		ic_version = 4;
 		pdop_value = 3.00;
 //		AT_PRINTF("gps module:%s\n\r","L76K");
 	}
-	else if(strstr(DATABUFF,l76L_buff) != NULL)
+	else if (strstr(buff, l76L_id))
 	{
 		ic_version = 1;
 		pdop_value = 3.00;
@@ -2253,8 +2237,6 @@ void gps_Identify()
 		ic_version = 0;
 		pdop_value = 3.00;
 	}
-  Store_Config();
-	memset(DATABUFF,0,sizeof(DATABUFF));
 }
 
 void send_exti(void)

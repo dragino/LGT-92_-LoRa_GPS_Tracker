@@ -62,30 +62,22 @@
 /* Exported functions ---------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-static __IO uint16_t AD_code1=0;
-static __IO uint16_t AD_code2=0;
-uint16_t AD_code3=0;
 
 extern uint32_t LON ;
+extern uint16_t batteryLevel_ref; // ADC reference
 
-extern uint16_t batteryLevel_mV;
 void BSP_sensor_Read( sensor_t *sensor_data)
 {
-  HAL_GPIO_WritePin(battery_CONTROL_PORT,battery_CONTROL_PIN,GPIO_PIN_RESET);
-	AD_code1=HW_AdcReadChannel( ADC_Channel_battery );
-	HAL_GPIO_WritePin(battery_CONTROL_PORT,battery_CONTROL_PIN,GPIO_PIN_SET);
+  uint16_t adc;
+  uint16_t pin_voltage; // mV on ADC
 
-	HW_GetBatteryLevel( );
-//	sensor_data->oil=AD_code1*batteryLevel_mV/4095;
-  AD_code2 = AD_code1*batteryLevel_mV/4095;
-	AD_code3 = (AD_code2*57/47);
-//	PRINTF("\n\rAD_code3=%d  \n\r", AD_code3);
-//	if(AD_code2 <= 3050)
-//	{
-//		gps_state_no();
-//		lora_state_Led();
-//	}
-  sensor_data->bat_mv = AD_code2*(47 + 10)/47;
+  HAL_GPIO_WritePin(battery_CONTROL_PORT, battery_CONTROL_PIN, GPIO_PIN_RESET);
+  adc = HW_AdcReadChannel(ADC_Channel_battery);
+  HAL_GPIO_WritePin(battery_CONTROL_PORT, battery_CONTROL_PIN, GPIO_PIN_SET);
+
+  HW_GetBatteryLevel(); // calculates batteryLevel_ref
+  pin_voltage = adc * batteryLevel_ref / 4095;
+  sensor_data->bat_mv = pin_voltage * (47 + 10) / 47; // resistor divider
 }
 
 void  BSP_sensor_Init( void  )

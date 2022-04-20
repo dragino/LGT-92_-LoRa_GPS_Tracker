@@ -2,7 +2,9 @@
  */
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 0x30000 /* 192K */
+  /* Split flash in two sections leaving a gap where user settings reside */
+  FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 0x18800
+  FLASH2 (rx) : ORIGIN = 0x0801A000, LENGTH = 0x16000 /* total 192K */
   RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x5000 /* 20K */
 }
 
@@ -40,6 +42,20 @@ ENTRY(Reset_Handler)
 
 SECTIONS
 {
+	.text2 :
+	{
+		build/at.c.o(.text*)
+		build/bsp.c.o(.text*)
+		build/command.c.o(.text*)
+		build/debug.c.o(.text*)
+		build/hw_gpio.c.o(.text*)
+		build/hw_rtc.c.o(.text*)
+		build/hw_spi.c.o(.text*)
+		build/lora.c.o(.text*)
+		build/main.c.o(.text*)
+		build/stm32l0xx_hal_*.c.o(.text*)
+	} > FLASH2
+
 	.text :
 	{
 		KEEP(*(.isr_vector))

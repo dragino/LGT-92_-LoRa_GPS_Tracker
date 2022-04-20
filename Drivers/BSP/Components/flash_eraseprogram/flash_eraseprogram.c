@@ -65,8 +65,7 @@ static FLASH_EraseInitTypeDef EraseInitStruct;
 /* Exported functions ---------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-/* Erase the user Flash area
-    (area defined by FLASH_USER_START_ADDR and FLASH_USER_END_ADDR) ***********/
+/* Erase the user Flash area */
 void EEPROM_program(uint32_t add, uint32_t *data, uint8_t count)
 {
 	uint32_t Address=0;

@@ -54,7 +54,7 @@
 #include "flash_eraseprogram.h"
 #include "version.h"
 #include "bsp.h"
-#include "GPS.h"
+#include "gps.h"
 #include "low_power_manager.h"
 #include "version.h"
 #include "mpu9250.h"
@@ -557,17 +557,17 @@ void LORA_Init (LoRaMainCallback_t *callbacks, LoRaParam_t* LoRaParam )
 	
   lora_config.TxDatarate = LoRaParamInit->TxDatarate;
 	
-	  if(FLASH_read(0x8018F80)==0x00)	//page799
+	  if(FLASH_read(FLASH_USER_START_ADDR_FDR) == 0x00)
 		{
 			fdr_config();
-			FLASH_program_on_addr(0x8018F80,0x11);		
+			FLASH_program_on_addr(FLASH_USER_START_ADDR_FDR, 0x11);
       PRINTF("Please set the parameters or reset Device to apply change\n\r");				
 		}
-		else if(FLASH_read(0x8018F80)==0x12)
+		else if(FLASH_read(FLASH_USER_START_ADDR_FDR) == 0x12)
 		{
 			fdr_config();
-			FLASH_erase(0x8018F80);//page 799					
-			FLASH_program_on_addr(0x8018F80,0x11);	
+			FLASH_erase(FLASH_USER_START_ADDR_FDR);
+			FLASH_program_on_addr(FLASH_USER_START_ADDR_FDR, 0x11);
       NVIC_SystemReset();				
 		}
     else 
@@ -626,10 +626,10 @@ void region_printf(void)
 	#ifdef AS923_2
   PPRINTF("AS923_2\n\r");
 	#elif AS923_4
-  PPRINTF("AS923_4\n\r");	
+  PPRINTF("AS923_4\n\r");
 	#else
 	PPRINTF("AS923\n\r");
-	#endif	
+	#endif
 #elif defined( REGION_AU915 )
   PPRINTF("AU915\n\r");
 #elif defined( REGION_CN470 )
@@ -1203,7 +1203,7 @@ void Store_Config(void)
 	s_config[config_count++]=(fr_mode<<8)|(se_mode);
 	
 	s_config[config_count++]=LP;
-	
+
 	FLASH_erase(FLASH_USER_START_ADDR_CONFIG);//Page800 
 	FLASH_program(FLASH_USER_START_ADDR_CONFIG,s_config,config_count);//store config
 	
@@ -1389,8 +1389,8 @@ void Read_Config(void)
 	fr_mode=(r_config[25]>>8)&0xFF;
 	
 	se_mode=r_config[26]&0xFF;
-	
-	LP=r_config[27]&0xFF;	
+
+	LP=r_config[27]&0xFF;
 	
 }
 
@@ -1411,21 +1411,16 @@ void EEPROM_Read_Config(void)
 
 uint16_t string_touint(void)
 {
-	char *p;	
-	uint8_t chanum=0;	
-	uint16_t versi;
-	char version[8]="";
-	p=AT_VERSION_STRING;
-	
-	while(*p++!='\0')
+	uint16_t versi = 0;
+	char *p = AT_VERSION_STRING;
+
+	while(*p++ != '\0')
 	{
-  if(*p>='0'&&*p<='9')
-   {
-		 version[chanum++]=*p;
-	 }		 
+		if(*p >= '0' && *p <= '9')
+		{
+			versi = versi * 10 + *p - '0';
+		}
 	}
-	versi=atoi(version);
-	
 	return versi;
 }
 
@@ -1445,7 +1440,7 @@ void new_firmware_update(void)
 	{		
 		update_flags[0]=(fire_frequcy<<16)| fire_version;
 		EEPROM_program(EEPROM_USER_Firmware_FLAGS,update_flags,1);//store hardversion
-		FLASH_erase(0x8018F80);//page 799
+		FLASH_erase(FLASH_USER_START_ADDR_FDR);
 		FLASH_erase(FLASH_USER_START_ADDR_CONFIG);
 		NVIC_SystemReset();		
 	}		

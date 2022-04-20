@@ -165,10 +165,12 @@ CFLAGS += -ffunction-sections
 LDFLAGS += -Wl,--gc-sections
 
 LDFLAGS += -T gcc-stm32l072cz.ld
-LDLIBS += -specs=nano.specs -specs=nosys.specs -lm
+LDLIBS += -specs=nano.specs -specs=nosys.specs -lm -u _printf_float
 
 CFLAGS += -DSTM32L072xx -DUSE_STM32L0XX_NUCLEO -DUSE_HAL_DRIVER -DUSE_SHT -DREGION_$(REGION)
 
+GIT_VERSION := $(shell git describe --tags)
+CFLAGS += -DCUSTOM_VERSION="$(GIT_VERSION)"
 
 all: $(BUILDDIR)/$(NAME).hex
 
@@ -191,11 +193,19 @@ $(BUILDDIR):
 size: $(BUILDDIR)/$(NAME).elf
 	$(SZ) --format=SysV --radix=16 $^ | egrep "^.text|^.data|^.bss"
 
-OPENOCD = openocd -f interface/stlink-v2.cfg -c "transport select hla_swd" \
-           -f target/stm32l0.cfg
+OPENOCD = openocd -f interface/stlink.cfg -c "transport select hla_swd" \
+           -f target/stm32l0_dual_bank.cfg
 
 flash: $(BUILDDIR)/$(NAME).hex
 	$(OPENOCD) -c "program $< verify reset exit"
+
+SETTINGS = settings.dat
+
+read_settings:
+	$(OPENOCD) -c "init" -c "reset init" -c "dump_image $(SETTINGS) 0x8019000 512" -c "shutdown"
+
+write_settings:
+	$(OPENOCD) -c "init" -c "reset init" -c "load_image $(SETTINGS) 0x8019000 512" -c "shutdown"
 
 clean:
 	rm -f $(OBJS) $(BUILDDIR)/$(NAME).hex $(BUILDDIR)/$(NAME).elf

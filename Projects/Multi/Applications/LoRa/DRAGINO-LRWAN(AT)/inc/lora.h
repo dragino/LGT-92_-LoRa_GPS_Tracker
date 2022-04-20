@@ -72,7 +72,13 @@ Maintainer: Miguel Luis, Gregory Cristian and Wael Guibene
 #include "region/Region.h"
 
 /* Exported constants --------------------------------------------------------*/
-   /*!
+/* Lora application flash settings */
+#define FLASH_USER_BASE                (FLASH_BASE + FLASH_PAGE_SIZE * 800)
+#define FLASH_USER_START_ADDR_CONFIG   (FLASH_USER_BASE)
+#define FLASH_USER_START_ADDR_KEY      (FLASH_USER_BASE + FLASH_PAGE_SIZE * 2)
+#define FLASH_USER_START_ADDR_FDR      (FLASH_USER_BASE - FLASH_PAGE_SIZE * 1)        /* FDR state storage */
+
+/*
  * LoRaWAN confirmed messages
  */
 

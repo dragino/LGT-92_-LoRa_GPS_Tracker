@@ -1,0 +1,16 @@
+Example make invocations (run from gcc directory):
+
+Build all and display binary size summary:
+ make size
+
+Parallel build:
+ make -j5 size
+
+Note if using parallel build, always run "make clean" separately:
+ make clean && make -j5 REGION=AU915
+
+Rebuild for given region (default is EU868):
+ make clean all REGION=AU915
+
+Flash new firmware via openocd (0.11 or newer):
+ make flash

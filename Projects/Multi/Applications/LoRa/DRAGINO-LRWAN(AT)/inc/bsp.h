@@ -75,7 +75,7 @@ typedef struct{
 	
 	float oil;  //oil float
 	
-	float  bat_mv;//PA0
+	int bat_mv; // PA0
 
 	
 	float temp_sht;

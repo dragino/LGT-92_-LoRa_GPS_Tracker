@@ -131,6 +131,10 @@ void at_tfmini_data_receive(uint8_t rxdatatemp[]);
 #define PRINTF(...)
 #endif
 
+#ifndef DEBUG_BAUD
+#define DEBUG_BAUD 9600
+#endif
+
 #ifdef __cplusplus
 }
 #endif
