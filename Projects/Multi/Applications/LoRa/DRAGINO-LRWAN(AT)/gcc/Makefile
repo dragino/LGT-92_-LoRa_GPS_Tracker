@@ -169,6 +169,8 @@ LDLIBS += -specs=nano.specs -specs=nosys.specs -lm -u _printf_float
 
 CFLAGS += -DSTM32L072xx -DUSE_STM32L0XX_NUCLEO -DUSE_HAL_DRIVER -DUSE_SHT -DREGION_$(REGION)
 
+GIT_VERSION := $(shell git describe --tags)
+CFLAGS += -DCUSTOM_VERSION="$(GIT_VERSION)"
 
 all: $(BUILDDIR)/$(NAME).hex
 

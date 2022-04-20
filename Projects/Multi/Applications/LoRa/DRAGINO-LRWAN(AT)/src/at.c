@@ -1269,6 +1269,13 @@ ATEerror_t at_RPL_get(const char *param)
 	return AT_OK;
 }
 
+#ifdef CUSTOM_VERSION
+#define xstr(s) str(s)
+#define str(s) #s
+#undef AT_VERSION_STRING
+#define AT_VERSION_STRING xstr(CUSTOM_VERSION)
+#endif
+
 ATEerror_t at_version_get(const char *param)
 {
   AT_PRINTF(AT_VERSION_STRING" ");
