@@ -429,9 +429,8 @@ int check(char *sentence,char *cksum)
 {   
 
     unsigned char *p=(unsigned char *)sentence,sum=0/*,ts*/; 
-    if(sentence == NULL || cksum == NULL)   
+    if (sentence == NULL || cksum == NULL || cksum[0] == '\0' || cksum[1] == '\0')
         return 0;   
-   
   
     for(; *p != 0; p++)   
     {   
