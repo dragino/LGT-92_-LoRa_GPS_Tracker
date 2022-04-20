@@ -1074,13 +1074,13 @@ void GPS_INPUT(void)
         GPS_DegreeToDMS(gps.longitude, &dd, &mm,&ss);
 
         // AT_PRINTF("%s:%3d %2d'%05.2f", (gps.lgtEW == 'E')?"East":"West", dd, mm, ss);
-        AT_PRINTF("%s: %.6f\r\n ",(gps.lgtEW == 'E')?"East":"West", gps.longitude);
+        AT_PRINTF("%s: %.6f ",(gps.lgtEW == 'E')?"East":"West", gps.longitude);
 
+        AT_PRINTF("PDOP:%.1f\r\n", pdop_gps);
         AT_PRINTF("Altitude:%.1f%c ", gps.altitude, gps.altitudeunit);
         AT_PRINTF("Speed:%.1f km/h ", gps.speed);
         AT_PRINTF("Course:%.1f ", gps.direction);
-        AT_PRINTF("Mode:%2d ", gps.GSA_mode2);
-        AT_PRINTF("PDOP:%.1f\r\n", pdop_gps);
+        AT_PRINTF("Mode:%2d\r\n", gps.GSA_mode2);
     }
     
     switch(gps.FixMode)
