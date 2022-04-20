@@ -480,6 +480,7 @@ uint8_t GPS_parse(char *buf)
     { 
 			gps_setflags=1;
 			gpspower_flag=0;			
+			return 1;
 		}				
 		
     if(!strcmp(word,"GNRRMC"))   
@@ -935,7 +936,9 @@ uint8_t GPS_parse(char *buf)
         {   
             gps.VDOP=(float)my_atof(word);   
         }       
-    }  
+    } else {
+        return 0; /* no matches */
+    }
 
     if(gps.latitude > 90.0)
       gps.latitude = 0.0;
