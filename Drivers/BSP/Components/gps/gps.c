@@ -418,6 +418,8 @@ char *split(char *buf,char s,char **left)
         *left=NULL;   
     }   
    
+    if (*ret == '\0')
+      ret = NULL;
     return ret;   
 }   
    
