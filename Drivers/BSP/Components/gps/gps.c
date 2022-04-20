@@ -461,13 +461,13 @@ uint8_t GPS_parse(char *buf)
         return 0;   
    
     if (loggps > 1)
-        PRINTF("GPS buffer: %s", buf);
+        PPRINTF("GPS buffer: %s", buf);
    
     word=split(left,ASTERISK,&left);   
     valid = check(word, left);
 
     if (loggps > 1)
-        PRINTF("%s\r\n", valid == 1 ? "" : " (ignored)");
+        PPRINTF("%s\r\n", valid == 1 ? "" : " (ignored)");
 
     if (valid != 1)
         return 0;
