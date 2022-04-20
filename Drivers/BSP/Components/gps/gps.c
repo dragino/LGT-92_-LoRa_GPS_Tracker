@@ -968,6 +968,7 @@ struct {
       return;
     if(buffer == '$')
       { 			
+         GPS_NEMA[NEMA_count].buffer[char_count] = '\0';
          GPS_NEMA[NEMA_count].isupdated = 1;  //将上面一条语句打上更新标志
          NEMA_count++;
          if(NEMA_count > (NEMA_NUM_MAX-1))
