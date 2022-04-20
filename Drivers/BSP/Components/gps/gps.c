@@ -402,7 +402,7 @@ char *split(char *buf,char s,char **left)
     }   
    
  
-    while(*p != 0 && *p != s && *p != '\r' && *p != '\n')   
+    while(*p != 0 && *p != s)
     {   
         p++;   
     }   
@@ -979,8 +979,10 @@ struct {
          char_count = 1;
 
        }
-			else
-				{
+      else
+        {
+         if (buffer == '\r' || buffer == '\n')
+           buffer = '\0';
          if(char_count < NEMA_CHAR_MAX-1)
           GPS_NEMA[NEMA_count].buffer[char_count++] = buffer;
         }
