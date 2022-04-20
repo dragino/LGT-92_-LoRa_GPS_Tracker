@@ -451,7 +451,6 @@ int check(char *sentence,char *cksum)
 uint8_t GPS_parse(char *buf)   
 {   
     //printf("%s\n",buf);    
-   int d,m,mm;
     uint8_t i;
    char *word,*left=buf+1;    
    static uint8_t msgcount=0,msgid=0,satcount=0;   //解析GSV用到的变量
@@ -515,9 +514,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GNRMC3:%s\n\r",word);				
         if(word != NULL)   
         {   
-             
-            sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
-            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;  
+            int d,m,mm,ret;
+            ret = sscanf(word,"%2d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
 //            AT_PRINTF("%s: %.6f度\n\r",gps.latitude);					
         }   
    
@@ -540,9 +542,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GNRMC5:%s\n\r",word);				 
         if(word != NULL)   
         {   
-            int d,m,mm;   
-            sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
-            gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
+            int d,m,mm,ret;
+            ret = sscanf(word,"%3d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
 //            AT_PRINTF("%s: %.6f度\n\r",gps.longitude);					
         }   
    
@@ -615,9 +620,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GPRMC2:%s\n\r",word);				
         if(word != NULL)   
         {   
-             
-            sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
-            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;   
+            int d,m,mm,ret;
+            ret = sscanf(word,"%2d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
         }   
    
         //南北半球标志    
@@ -639,9 +647,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GPRMC4:%s\n\r",word);				 
         if(word != NULL)   
         {   
-            int d,m,mm;   
-            sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
-            gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;   
+            int d,m,mm,ret;
+            ret = sscanf(word,"%3d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.longitude = (float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
         }   
    
         //东西半球标志    
@@ -701,9 +712,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GPGGA1:%s\n\r",word);				
         if(word != NULL)   
         {   
-            int d,m,mm;   
-            sscanf(word,"%2d%2d.%4d",&d,&m,&mm);   
-            gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;   
+            int d,m,mm,ret;
+            ret = sscanf(word,"%2d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.latitude=(float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
         }   
    
         //南北半球标志    
@@ -724,9 +738,12 @@ uint8_t GPS_parse(char *buf)
 //        AT_PRINTF("GPGGA3:%s\n\r",word);				 
         if(word != NULL)   
         {   
-            int d,m,mm;   
-            sscanf(word,"%3d%2d.%4d",&d,&m,&mm);   
-            gps.longitude=(float)d+(float)m/60.0+(float)mm/600000.0;   
+            int d,m,mm,ret;
+            ret = sscanf(word,"%3d%2d.%4d",&d,&m,&mm);
+            if (ret == 3)
+              gps.longitude=(float)d+(float)m/60.0+(float)mm/600000.0;
+            else
+              return 0;
         }   
    
         //东西半球标志    
