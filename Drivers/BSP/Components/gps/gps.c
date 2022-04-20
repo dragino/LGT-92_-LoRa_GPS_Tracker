@@ -15,7 +15,6 @@
   char lasttime[20]; 
   _Bool isrunning; 
   uint32_t   isFirmwareUpdate = 0; 
-	int count =0;
 	uint8_t gpspower_flag=0;
 	float pdop_gps;
 	char *txdata353;
@@ -985,13 +984,6 @@ struct {
          if(char_count < NEMA_CHAR_MAX-1)
           GPS_NEMA[NEMA_count].buffer[char_count++] = buffer;
         }
-			count ++;	
-		if(count == 255)
-		{
-			GPS_NEMA[NEMA_count].isupdated = 0  ;
-			GPS_NEMA[NEMA_count].buffer[char_count++] = 0  ;
-			count = 0;
-		}
   }
 uint8_t GPS_INFO_update(void)
 { 
